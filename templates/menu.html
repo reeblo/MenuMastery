@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Menú - MenuMastery{% endblock %}
+
+{% block content %}
+<section class="menu-section py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar de categorías -->
+            <div class="col-lg-3 mb-4 mb-lg-0">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-body text-center">
+                        <img src="{{ url_for('static', filename='img/utensils-icon.png') }}" alt="Ícono menú" class="img-fluid mb-3" width="60">
+                        <h3 class="h4 mb-4">NUESTRO MENÚ</h3>
+                        
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="circle bg-primary mx-1"></div>
+                            <div class="circle bg-secondary mx-1"></div>
+                        </div>
+                        
+                        <nav class="nav flex-column">
+                            <a class="nav-link menu-category active" href="#" data-category="all">Todos los platos</a>
+                            {% for categoria in menu %}
+                            <a class="nav-link menu-category" href="#" data-category="cat-{{ categoria.id }}">
+                                {{ categoria.nombre }}
+                            </a>
+                            {% endfor %}
+                        </nav>
+                        
+                        <img src="{{ url_for('static', filename='img/chef-icon.png') }}" alt="Chef" class="img-fluid mt-4" width="80">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenido principal del menú -->
+            <div class="col-lg-9">
+                <!-- Filtros móviles -->
+                <div class="d-lg-none mb-4">
+                    <select class="form-select" id="mobile-category-filter">
+                        <option value="all">Todos los platos</option>
+                        {% for categoria in menu %}
+                        <option value="cat-{{ categoria.id }}">{{ categoria.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Listado de platos -->
+                <div class="row" id="platos-container">
+                    {% for categoria in menu %}
+                    {% for plato in categoria.platos %}
+                    <div class="col-md-6 col-xl-4 mb-4 plato-item" data-category="cat-{{ categoria.id }}">
+                        <div class="card h-100 border-0 shadow-sm">
+                            {% if plato.destacado %}
+                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">Destacado</span>
+                            {% endif %}
+                            
+                            <img src="{{ url_for('static', filename='img/platos/' + plato.imagen) }}" class="card-img-top" alt="{{ plato.nombre }}" style="height: 180px; object-fit: cover;">
+                            
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">{{ plato.nombre }}</h5>
+                                    <span class="badge bg-primary">{{ categoria.nombre }}</span>
+                                </div>
+                                
+                                <p class="card-text text-muted small">{{ plato.descripcion }}</p>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="rating">
+                                        {% for i in range(5) %}
+                                        <i class="fas fa-star {% if i < 4 %}text-warning{% else %}text-secondary{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <h5 class="text-primary mb-0">${{ "{:,.0f}".format(plato.precio) }}</h5>
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer bg-white border-0">
+                                <button class="btn btn-outline-primary w-100 add-to-cart" data-plato-id="{{ plato.id }}">
+                                    <i class="fas fa-plus me-2"></i> Añadir al pedido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filtrado de categorías
+document.querySelectorAll('.menu-category').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const category = this.getAttribute('data-category');
+        
+        // Actualizar active state
+        document.querySelectorAll('.menu-category').forEach(el => el.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filtrar platos
+        document.querySelectorAll('.plato-item').forEach(item => {
+            if(category === 'all' || item.getAttribute('data-category') === category) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Filtro móvil
+document.getElementById('mobile-category-filter').addEventListener('change', function() {
+    const category = this.value;
+    document.querySelectorAll('.plato-item').forEach(item => {
+        if(category === 'all' || item.getAttribute('data-category') === category) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Añadir al carrito
+document.querySelectorAll('.add-to-cart').forEach(button => {
+    button.addEventListener('click', function() {
+        const platoId = this.getAttribute('data-plato-id');
+        // Aquí iría la lógica para añadir al carrito
+        alert(`Plato ${platoId} añadido al carrito`);
+        // En una implementación real, haríamos una petición AJAX
+    });
+});
+</script>
+{% endblock %}

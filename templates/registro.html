@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}Registro - MenuMastery{% endblock %}
+
+{% block content %}
+<div class="registration-container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-white border-bottom-0">
+                    <h2 class="text-center my-3">
+                        <i class="fas fa-user-plus me-2"></i>Crear Cuenta
+                    </h2>
+                </div>
+                
+                <!-- Mensajes Flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show mx-4 mt-3 mb-0">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <div class="card-body pt-1">
+                    <form id="registration-form" method="POST" action="{{ url_for('registro') }}">
+                        <!-- Nombre -->
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="nombre" name="nombre" 
+                                   placeholder="Nombre completo" required>
+                            <label for="nombre">Nombre completo</label>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="nombre@ejemplo.com" required>
+                            <label for="email">Correo electrónico</label>
+                        </div>
+                        
+                        <!-- Confirmar Email -->
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="confirm_email" name="confirm_email" 
+                                   placeholder="Confirmar correo electrónico" required>
+                            <label for="confirm_email">Confirmar correo electrónico</label>
+                            <div class="invalid-feedback" id="email-error">Los correos no coinciden</div>
+                        </div>
+                        
+                        <!-- Contraseña -->
+                        <div class="form-floating mb-3 position-relative">
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Contraseña" required minlength="8">
+                            <label for="password">Contraseña</label>
+                            <small class="form-text text-muted">Mínimo 8 caracteres</small>
+                            <i class="fas fa-eye position-absolute end-0 top-50 translate-middle-y me-3" 
+                               style="cursor: pointer;" id="toggle-password"></i>
+                        </div>
+                        
+                        <!-- Confirmar Contraseña -->
+                        <div class="form-floating mb-4">
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                   placeholder="Confirmar contraseña" required>
+                            <label for="confirm_password">Confirmar contraseña</label>
+                            <div class="invalid-feedback" id="password-error">Las contraseñas no coinciden</div>
+                        </div>
+                        
+                        <!-- Términos y condiciones -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">
+                                Acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Términos y Condiciones</a>
+                            </label>
+                        </div>
+                        
+                        <!-- Botón de registro -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Registrarse
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer text-center py-3 bg-white">
+                    <p class="mb-0">¿Ya tienes una cuenta? <a href="{{ url_for('login') }}">Inicia sesión</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Términos y Condiciones -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Términos y Condiciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% include 'auth/terminos_condiciones.html' %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar/ocultar contraseña
+    const togglePassword = document.getElementById('toggle-password');
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm_password');
+    
+    togglePassword.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        confirmPasswordField.setAttribute('type', type);
+        this.classList.toggle('fa-eye-slash');
+    });
+    
+    // Validación de confirmación de email
+    const emailField = document.getElementById('email');
+    const confirmEmailField = document.getElementById('confirm_email');
+    
+    confirmEmailField.addEventListener('input', function() {
+        if (emailField.value !== confirmEmailField.value) {
+            confirmEmailField.classList.add('is-invalid');
+        } else {
+            confirmEmailField.classList.remove('is-invalid');
+        }
+    });
+    
+    // Validación de confirmación de contraseña
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    confirmPassword.addEventListener('input', function() {
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.classList.add('is-invalid');
+        } else {
+            confirmPassword.classList.remove('is-invalid');
+        }
+    });
+    
+    // Validación del formulario antes de enviar
+    const form = document.getElementById('registration-form');
+    form.addEventListener('submit', function(event) {
+        let isValid = true;
+        
+        // Validar emails coincidan
+        if (emailField.value !== confirmEmailField.value) {
+            confirmEmailField.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validar contraseñas coincidan
+        if (password.value !== confirmPassword.value) {
+            confirmPassword.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validar términos aceptados
+        if (!document.getElementById('terms').checked) {
+            alert('Debes aceptar los términos y condiciones');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.registration-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.form-floating label {
+    padding: 1rem 1.75rem;
+}
+
+#toggle-password {
+    z-index: 10;
+}
+
+@media (max-width: 767.98px) {
+    .card {
+        border-radius: 0;
+    }
+}
+</style>
+{% endblock %}

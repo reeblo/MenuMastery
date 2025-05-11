@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Contacto - MenuMastery{% endblock %}
+
+{% block content %}
+<section class="contact-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold">CONTACTO</h1>
+            <p class="lead">Estamos aquí para atenderte</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Información del restaurante -->
+            <div class="col-lg-5">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h3 mb-4">
+                            Quinta de Santa María
+                            <span class="text-warning">★★★★☆</span>
+                            <span class="badge bg-primary">4.6</span>
+                        </h2>
+                        
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                <strong>Dirección:</strong> 43, Tesalia, Huila
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                <strong>Horario:</strong> 11:00 am - 9:00 pm
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-money-bill-wave text-primary me-2"></i>
+                                <strong>Rango de precios:</strong> $20,000 - $30,000 por persona
+                            </li>
+                            <li class="mb-4">
+                                <i class="fas fa-swimming-pool text-primary me-2"></i>
+                                <strong>Servicios:</strong> Piscina disponible
+                            </li>
+                        </ul>
+                        
+                        <h3 class="h4 mb-3">Contáctanos</h3>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="https://wa.me/tuNumero" target="_blank" class="btn btn-outline-success">
+                                <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                            </a>
+                            <a href="https://www.instagram.com/tuUsuario" target="_blank" class="btn btn-outline-danger">
+                                <i class="fab fa-instagram me-1"></i> Instagram
+                            </a>
+                            <a href="https://twitter.com/tuUsuario" target="_blank" class="btn btn-outline-info">
+                                <i class="fab fa-twitter me-1"></i> Twitter
+                            </a>
+                            <a href="https://www.facebook.com/tuUsuario" target="_blank" class="btn btn-outline-primary">
+                                <i class="fab fa-facebook-f me-1"></i> Facebook
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mapa -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-0">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3975.5401947630666!2d-75.46713557567535!3d2.545238978146152!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e3e2d08eaf5a25b%3A0x408cc2dff7f158de!2sTesalia%2C%20Huila!5e0!3m2!1ses!2sco!4v1699368472869!5m2!1ses!2sco" 
+                            class="w-100 h-100" 
+                            style="min-height: 300px; border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reseñas -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h3 mb-4">Reseñas de Clientes</h2>
+                        
+                        <div class="review mb-4 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h5 class="mb-0">Ana María</h5>
+                                <div>
+                                    <span class="text-warning">★★★★☆</span>
+                                    <span class="small text-muted">4.5</span>
+                                </div>
+                            </div>
+                            <p class="mb-0">
+                                "El sitio es agradable, buena música, excelente atención. Mi plato estaba un poco salado, 
+                                pero en general muy buena experiencia."
+                            </p>
+                        </div>
+                        
+                        <div class="review mb-4 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h5 class="mb-0">Carlos Rodríguez</h5>
+                                <div>
+                                    <span class="text-warning">★★★★★</span>
+                                    <span class="small text-muted">5.0</span>
+                                </div>
+                            </div>
+                            <p class="mb-0">
+                                "Excelente servicio y la comida estaba deliciosa. Volveré pronto con mi familia."
+                            </p>
+                        </div>
+                        
+                        <!-- Formulario de reseñas -->
+                        <div class="mt-5">
+                            <h3 class="h4 mb-3">¿Cómo valoras nuestro restaurante?</h3>
+                            
+                            <form method="POST" action="{{ url_for('enviar_resena') }}">
+                                <div class="mb-3">
+                                    <div class="rating-input mb-2">
+                                        <input type="radio" id="star5" name="rating" value="5" class="visually-hidden">
+                                        <label for="star5" class="star-label">★</label>
+                                        <input type="radio" id="star4" name="rating" value="4" class="visually-hidden">
+                                        <label for="star4" class="star-label">★</label>
+                                        <input type="radio" id="star3" name="rating" value="3" class="visually-hidden">
+                                        <label for="star3" class="star-label">★</label>
+                                        <input type="radio" id="star2" name="rating" value="2" class="visually-hidden">
+                                        <label for="star2" class="star-label">★</label>
+                                        <input type="radio" id="star1" name="rating" value="1" class="visually-hidden">
+                                        <label for="star1" class="star-label">★</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="review-text" class="form-label">¡Cuéntanos tu experiencia!</label>
+                                    <textarea class="form-control" id="review-text" name="comentario" 
+                                              rows="3" placeholder="Escribe tu experiencia aquí..." required></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre (opcional)</label>
+                                    <input type="text" class="form-control" id="nombre" name="nombre">
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Enviar Reseña</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Formulario de contacto -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h2 class="h3 mb-4">Escríbenos</h2>
+                        
+                        <form method="POST" action="{{ url_for('enviar_contacto') }}">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Correo electrónico</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="telefono" class="form-label">Teléfono (opcional)</label>
+                                <input type="tel" class="form-control" id="telefono" name="telefono">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="mensaje" class="form-label">Mensaje</label>
+                                <textarea class="form-control" id="mensaje" name="mensaje" rows="4" required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">Enviar Mensaje</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block styles %}
+<style>
+.rating-input {
+    direction: rtl;
+    unicode-bidi: bidi-override;
+}
+
+.star-label {
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating-input input[type="radio"]:checked ~ label,
+.rating-input label:hover,
+.rating-input label:hover ~ label {
+    color: #ffc107;
+}
+
+.rating-input input[type="radio"]:checked + label {
+    color: #ffc107;
+}
+
+.review {
+    transition: transform 0.3s;
+}
+
+.review:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.contact-section {
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 767.98px) {
+    .rating-input {
+        text-align: center;
+    }
+    
+    .card {
+        margin-bottom: 1.5rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+
+{% block title %}Carrito de Compras - MenuMastery{% endblock %}
+
+{% block content %}
+<section class="cart-section py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Resumen del pedido -->
+            <div class="col-lg-8 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>Tu Pedido
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="cart-items">
+                            <!-- Ejemplo de item en el carrito -->
+                            <div class="cart-item border-bottom pb-3 mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-2">
+                                        <img src="{{ url_for('static', filename='img/platos/cafe.jpg') }}" 
+                                             alt="Café" class="img-fluid rounded">
+                                    </div>
+                                    <div class="col-5">
+                                        <h5 class="mb-1">Café Especial</h5>
+                                        <p class="text-muted small mb-0">Bebida caliente</p>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="input-group">
+                                            <button class="btn btn-outline-secondary minus-btn" type="button">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center quantity" 
+                                                   value="1" min="1">
+                                            <button class="btn btn-outline-secondary plus-btn" type="button">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-2 text-end">
+                                        <span class="price">$5.000</span>
+                                        <button class="btn btn-link text-danger remove-item">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Segundo item de ejemplo -->
+                            <div class="cart-item border-bottom pb-3 mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-2">
+                                        <img src="{{ url_for('static', filename='img/platos/pan.jpg') }}" 
+                                             alt="Pan" class="img-fluid rounded">
+                                    </div>
+                                    <div class="col-5">
+                                        <h5 class="mb-1">Pan Artesanal</h5>
+                                        <p class="text-muted small mb-0">Panadería</p>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="input-group">
+                                            <button class="btn btn-outline-secondary minus-btn" type="button">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center quantity" 
+                                                   value="2" min="1">
+                                            <button class="btn btn-outline-secondary plus-btn" type="button">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-2 text-end">
+                                        <span class="price">$6.000</span>
+                                        <button class="btn btn-link text-danger remove-item">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-3">
+                            <button class="btn btn-outline-danger" id="clear-cart">
+                                <i class="fas fa-trash me-1"></i> Vaciar Carrito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Historial de compras (solo para usuarios logueados) -->
+                {% if current_user.is_authenticated %}
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-history me-2"></i>Tu Historial
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-history-item border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="mb-1">Orden #12345</h5>
+                                    <p class="text-muted small mb-0">07/01/2025 - 2 productos</p>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-1 fw-bold">$10.000</p>
+                                    <span class="badge bg-success">Completado</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-history-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="mb-1">Orden #12344</h5>
+                                    <p class="text-muted small mb-0">05/01/2025 - 3 productos</p>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-1 fw-bold">$6.000</p>
+                                    <span class="badge bg-warning text-dark">En proceso</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Resumen de pago y productos sugeridos -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-receipt me-2"></i>Resumen
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$11.000</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Envío:</span>
+                            <span id="shipping">$2.000</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Descuento:</span>
+                            <span class="text-danger" id="discount">-$0</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between fw-bold fs-5">
+                            <span>Total:</span>
+                            <span id="total">$13.000</span>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary btn-lg" id="checkout-btn">
+                                <i class="fas fa-credit-card me-2"></i> Pagar en Línea
+                            </button>
+                            <button class="btn btn-outline-primary btn-lg" id="cash-btn">
+                                <i class="fas fa-money-bill-wave me-2"></i> Pagar en Efectivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Productos sugeridos -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>¿Te gustaría añadir?
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="suggested-product mb-3">
+                            <div class="row align-items-center">
+                                <div class="col-4">
+                                    <img src="{{ url_for('static', filename='img/platos/te-verde.jpg') }}" 
+                                         alt="Té verde" class="img-fluid rounded">
+                                </div>
+                                <div class="col-5">
+                                    <h6 class="mb-1">Té Verde</h6>
+                                    <p class="text-muted small mb-0">$5.000</p>
+                                </div>
+                                <div class="col-3 text-end">
+                                    <button class="btn btn-sm btn-outline-success add-suggested" 
+                                            data-name="Té Verde" data-price="5000">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="suggested-product">
+                            <div class="row align-items-center">
+                                <div class="col-4">
+                                    <img src="{{ url_for('static', filename='img/platos/galletas.jpg') }}" 
+                                         alt="Galletas" class="img-fluid rounded">
+                                </div>
+                                <div class="col-5">
+                                    <h6 class="mb-1">Galletas Artesanales</h6>
+                                    <p class="text-muted small mb-0">$3.500</p>
+                                </div>
+                                <div class="col-3 text-end">
+                                    <button class="btn btn-sm btn-outline-success add-suggested" 
+                                            data-name="Galletas Artesanales" data-price="3500">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Funcionalidad del carrito
+document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar cantidades
+    document.querySelectorAll('.quantity').forEach(input => {
+        input.addEventListener('change', function() {
+            updateCartTotal();
+        });
+    });
+    
+    // Botones de incremento/decremento
+    document.querySelectorAll('.plus-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const input = this.parentNode.querySelector('.quantity');
+            input.value = parseInt(input.value) + 1;
+            updateCartTotal();
+        });
+    });
+    
+    document.querySelectorAll('.minus-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const input = this.parentNode.querySelector('.quantity');
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+                updateCartTotal();
+            }
+        });
+    });
+    
+    // Eliminar items
+    document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.cart-item').remove();
+            updateCartTotal();
+        });
+    });
+    
+    // Vaciar carrito
+    document.getElementById('clear-cart').addEventListener('click', function() {
+        document.getElementById('cart-items').innerHTML = '<div class="text-center py-4">' +
+            '<i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>' +
+            '<p class="text-muted">Tu carrito está vacío</p>' +
+            '<a href="{{ url_for("menu") }}" class="btn btn-primary">Ver Menú</a>' +
+            '</div>';
+        updateCartTotal();
+    });
+    
+    // Añadir productos sugeridos
+    document.querySelectorAll('.add-suggested').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const name = this.getAttribute('data-name');
+            const price = this.getAttribute('data-price');
+            addToCart(name, price);
+        });
+    });
+    
+    // Actualizar total
+    function updateCartTotal() {
+        let subtotal = 0;
+        
+        document.querySelectorAll('.cart-item').forEach(item => {
+            const price = parseFloat(item.querySelector('.price').textContent.replace('$', '').replace('.', ''));
+            const quantity = parseInt(item.querySelector('.quantity').value);
+            subtotal += price * quantity;
+        });
+        
+        const shipping = 2000; // Costo fijo de envío
+        const total = subtotal + shipping;
+        
+        document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString();
+        document.getElementById('total').textContent = '$' + total.toLocaleString();
+    }
+    
+    // Añadir al carrito
+    function addToCart(name, price) {
+        // Implementación real haría una petición al servidor
+        alert(`Añadido: ${name} - $${price}`);
+        // Aquí iría la lógica para añadir el producto al carrito
+        updateCartTotal();
+    }
+    
+    // Inicializar total
+    updateCartTotal();
+});
+</script>
+{% endblock %}

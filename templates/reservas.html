@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Reservas - MenuMastery{% endblock %}
+
+{% block content %}
+<section class="reservation-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h2 class="h4 mb-4 text-center">Reserva tu mesa</h2>
+                        <form method="POST" action="{{ url_for('reservas') }}">
+                            {{ form.hidden_tag() }}
+
+                            <!-- Fecha y hora -->
+                            <div class="mb-4">
+                                <label for="fecha" class="form-label fw-bold">Fecha de la reserva</label>
+                                <input type="date" class="form-control" id="fecha" name="fecha" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="hora" class="form-label fw-bold">Hora</label>
+                                <select class="form-select" id="hora" name="hora" required>
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="13:00">1:00 PM</option>
+                                    <option value="14:00">2:00 PM</option>
+                                    <option value="15:00">3:00 PM</option>
+                                    <option value="18:00">6:00 PM</option>
+                                    <option value="19:00">7:00 PM</option>
+                                    <option value="20:00">8:00 PM</option>
+                                </select>
+                            </div>
+
+                            <!-- Cantidad de personas -->
+                            <div class="mb-4">
+                                <label for="personas" class="form-label fw-bold">Número de personas</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <select class="form-select form-select-lg" id="personas" name="personas" required>
+                                            <option value="1">1 persona</option>
+                                            <option value="2">2 personas</option>
+                                            <option value="3">3 personas</option>
+                                            <option value="4">4 personas</option>
+                                            <option value="5">5 personas</option>
+                                            <option value="6">6 personas</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" class="form-control form-control-lg" 
+                                               id="personas_extra" name="personas_extra" 
+                                               min="7" placeholder="Más de 6 personas" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información adicional -->
+                            <div class="mb-4">
+                                <label for="comentarios" class="form-label fw-bold">Información adicional (opcional)</label>
+                                <textarea class="form-control" id="comentarios" name="comentarios" 
+                                          rows="3" placeholder="Alergias, requerimientos especiales, etc."></textarea>
+                            </div>
+
+                            <!-- Datos de contacto (si no está logueado) -->
+                            {% if not current_user.is_authenticated %}
+                            <div class="mb-4">
+                                <h3 class="h5 mb-3">Datos de contacto</h3>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" name="nombre" 
+                                               placeholder="Nombre completo" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="email" class="form-control" name="email" 
+                                               placeholder="Correo electrónico" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="tel" class="form-control" name="telefono" 
+                                               placeholder="Teléfono" required>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Botón de confirmación -->
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg py-3">
+                                    <i class="fas fa-calendar-check me-2"></i> Confirmar Reserva
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Información adicional -->
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Políticas de reservación</h3>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-clock text-primary me-2"></i> Horario: 11:00 AM - 9:00 PM</li>
+                            <li class="mb-2"><i class="fas fa-users text-primary me-2"></i> Grupos mayores a 8 personas requieren reservación especial</li>
+                            <li class="mb-2"><i class="fas fa-undo text-primary me-2"></i> Cancelaciones con 24 horas de anticipación</li>
+                            <li><i class="fas fa-utensils text-primary me-2"></i> Mesa reservada por 2 horas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

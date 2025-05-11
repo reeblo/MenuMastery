@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - MenuMastery{% endblock %}
+
+{% block content %}
+<!-- Carrusel -->
+<section id="inicio">
+    <div class="carousel-container">
+        <div class="carousel-slides">
+            <div class="slide active">
+                <img src="{{ url_for('static', filename='img/carrusel1.jpg') }}" alt="Plato gourmet destacado" loading="lazy">
+                <div class="slide-content">
+                    <h2>Experiencia Gastronómica Única</h2>
+                    <p>Descubre sabores que deleitarán tus sentidos</p>
+                    <button onclick="window.location.href='#reservas'" class="btn-primary" 
+                    style="background-color: #4e54c8; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">Reservar Mesa</button>
+                </div>
+            </div>
+            
+            <div class="slide">
+                <img src="{{ url_for('static', filename='img/carrusel2.jpeg') }}" alt="Ambiente del restaurante" loading="lazy">
+                <div class="slide-content">
+                    <h2>Ambiente Excepcional</h2>
+                    <p>Disfruta de nuestro espacio diseñado para tu comodidad</p>
+                    <button onclick="window.location.href='#galeria'" class="btn-primary" 
+                    style="background-color: #4e54c8; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">Ver galeria</button>
+                </div>
+            </div>
+            
+            <div class="slide">
+                <img src="{{ url_for('static', filename='img/carrusel3.jpeg') }}" alt="Eventos especiales" loading="lazy">
+                <div class="slide-content">
+                    <h2>Celebra con Nosotros</h2>
+                    <p>Organizamos tus eventos especiales con el mejor servicio</p>
+                    <button onclick="window.location.href='#contacto'" class="btn-primary" 
+                    style="background-color: #4e54c8; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">Consultar contactos</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controles -->
+        <button class="carousel-control prev" aria-label="Slide anterior">‹</button>
+        <button class="carousel-control next" aria-label="Slide siguiente">›</button>
+        
+        <!-- Indicadores -->
+        <div class="carousel-indicators">
+            <span class="indicator active" data-index="0" aria-label="1"></span>
+            <span class="indicator" data-index="1" aria-label="2"></span>
+            <span class="indicator" data-index="2" aria-label="3"></span>
+        </div>
+    </div>
+
+    <!-- Sección Oferta Especial y Mapa -->
+    <!-- Sección Oferta Especial y Mapa -->
+    <div class="container my-5">
+        <div class="row g-4">
+            <!-- Mapa y Ubicación - Ocupa 5 columnas en pantallas grandes -->
+            <div class="col-lg-5 col-md-6 col-12">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h2 class="h5 mb-0">Nuestra ubicación</h2>
+                    </div>
+                    <div class="map-container">
+                        <img src="{{ url_for('static', filename='img/direccion index.png') }}" class="card-img-top" alt="Mapa de ubicación del restaurante" loading="lazy">
+                        <div class="card-body text-center">
+                            <address class="mb-3">
+                                <strong>MenuMastery</strong><br>
+                                Calle 43 #12-34<br>
+                                Tesalia, Huila<br>
+                                Tel: (57) 123 456 7890
+                            </address>
+                            <a href="https://maps.google.com/maps?q=MenuMastery+Tesalia" target="_blank" class="btn btn-outline-dark btn-sm">
+                                <i class="fas fa-map-marker-alt me-2"></i>Ver en Google Maps
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Oferta Especial - Ocupa 3 columnas en pantallas grandes -->
+            <div class="col-lg-3 col-md-6 col-12">
+                <div class="card h-100 bg-gradient-primary text-white shadow-lg">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center p-4 text-center">
+                        <div class="badge bg-white text-primary mb-3">Oferta exclusiva</div>
+                        <h2 class="card-title h1">20% de descuento</h2>
+                        <p class="card-text lead">En tu primera visita al registrarte</p>
+                        <div class="mt-4">
+                            <a href="/registro" class="btn btn-light btn-lg px-4">Registrarse ahora</a>
+                        </div>
+                        <small class="mt-3 opacity-75">* Válido para nuevas cuentas</small>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Promoción destacada - Ocupa 4 columnas en pantallas grandes -->
+            <div class="col-lg-4 col-md-12 col-12 mt-md-0 mt-4">
+                <div class="h-100 overflow-hidden rounded-3 shadow-sm" style="position: relative;">
+                    <img src="{{ url_for('static', filename='img/promocion index.png') }}" class="img-fluid w-100 h-100" style="object-fit: cover; min-height: 300px;" alt="Promoción del mes en MenuMastery" loading="lazy">
+                    <div class="promo-overlay">
+                        <h3 class="promo-title">Menú degustación</h3>
+                        <p class="promo-text">5 platos + maridaje por solo $120.000</p>
+                        <a href="#reservas" class="btn btn-outline-light">Reservar ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<style>
+/* Estilos para el carrusel */
+.carousel-container {
+    position: relative;
+    width: 100%;
+    height: 80vh;
+    max-height: 800px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.carousel-slides {
+    display: flex;
+    width: 300%;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+
+.slide {
+    position: relative;
+    width: 33.333%;
+    height: 100%;
+}
+
+.slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.slide-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    width: 90%;
+    max-width: 800px;
+    padding: 2rem;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+}
+
+.slide-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    animation: fadeInUp 0.8s ease;
+}
+
+.slide-content p {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.8s ease 0.2s forwards;
+    opacity: 0;
+}
+
+.slide-content .btn {
+    animation: fadeInUp 0.8s ease 0.4s forwards;
+    opacity: 0;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    border: 2px solid white;
+    background-color: transparent;
+    transition: all 0.3s ease;
+}
+
+.slide-content .btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.carousel-control {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.carousel-control:hover {
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #333;
+}
+
+.prev {
+    left: 20px;
+}
+
+.next {
+    right: 20px;
+}
+
+
+.carousel-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0; 
+    display: flex;
+    justify-content: center; 
+    gap: 10px;
+    margin: 0 auto; 
+    padding: 0; 
+    list-style: none; 
+    z-index: 10;
+}
+
+.carousel-indicators .indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicators .indicator.active {
+    background-color: white;
+    transform: scale(1.2);
+}
+
+
+.btn-primary {
+    background-color: #4e54c8;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: inline-block;
+}
+    
+.btn-primary:hover {
+    background-color: #3a41b0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+    
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+/* Asegurar altura consistente */
+.promo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+@media (max-width: 992px) {
+    .promo-overlay {
+        padding: 0.5rem;
+    }
+    .promo-title {
+        font-size: 1.5rem;
+    }
+    .promo-text {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
