@@ -81,38 +81,31 @@
                     <div class="card-body">
                         <h2 class="h3 mb-4">Reseñas de Clientes</h2>
                         
+                        {% for resena in resenas %}
                         <div class="review mb-4 p-3 bg-light rounded">
                             <div class="d-flex justify-content-between mb-2">
-                                <h5 class="mb-0">Ana María</h5>
+                                <h5 class="mb-0">{{ resena.nombre or 'Anónimo' }}</h5>
                                 <div>
-                                    <span class="text-warning">★★★★☆</span>
-                                    <span class="small text-muted">4.5</span>
+                                    <span class="text-warning">
+                                        {% for i in range(1,6) %}
+                                            {% if i <= resena.calificacion %}★{% else %}☆{% endif %}
+                                        {% endfor %}
+                                    </span>
+                                    <span class="small text-muted">{{ resena.calificacion }}.0</span>
                                 </div>
                             </div>
                             <p class="mb-0">
-                                "El sitio es agradable, buena música, excelente atención. Mi plato estaba un poco salado, 
-                                pero en general muy buena experiencia."
+                                "{{ resena.comentario }}"
                             </p>
                         </div>
-                        
-                        <div class="review mb-4 p-3 bg-light rounded">
-                            <div class="d-flex justify-content-between mb-2">
-                                <h5 class="mb-0">Carlos Rodríguez</h5>
-                                <div>
-                                    <span class="text-warning">★★★★★</span>
-                                    <span class="small text-muted">5.0</span>
-                                </div>
-                            </div>
-                            <p class="mb-0">
-                                "Excelente servicio y la comida estaba deliciosa. Volveré pronto con mi familia."
-                            </p>
-                        </div>
+                        {% endfor %}
                         
                         <!-- Formulario de reseñas -->
                         <div class="mt-5">
                             <h3 class="h4 mb-3">¿Cómo valoras nuestro restaurante?</h3>
                             
-                            <form method="POST" action="{{ url_for('enviar_resena') }}">
+                            <form method="POST" action="{{ url_for('contacto') }}">
+                                <input type="hidden" name="enviar_resena" value="1">
                                 <div class="mb-3">
                                     <div class="rating-input mb-2">
                                         <input type="radio" id="star5" name="rating" value="5" class="visually-hidden">
@@ -131,7 +124,7 @@
                                 <div class="mb-3">
                                     <label for="review-text" class="form-label">¡Cuéntanos tu experiencia!</label>
                                     <textarea class="form-control" id="review-text" name="comentario" 
-                                              rows="3" placeholder="Escribe tu experiencia aquí..." required></textarea>
+                                        rows="3" placeholder="Escribe tu experiencia aquí..." required></textarea>
                                 </div>
                                 
                                 <div class="mb-3">
@@ -152,7 +145,8 @@
                     <div class="card-body">
                         <h2 class="h3 mb-4">Escríbenos</h2>
                         
-                        <form method="POST" action="{{ url_for('enviar_contacto') }}">
+                        <form method="POST" action="{{ url_for('contacto') }}">
+                            <input type="hidden" name="contacto_form" value="1">
                             <div class="mb-3">
                                 <label for="nombre" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="nombre" name="nombre" required>

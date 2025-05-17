@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Compras - MenuMastery{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-history me-2"></i>Tu Historial de Compras
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        {% if pedidos %}
+                            {% for pedido in pedidos %}
+                            <div class="order-detail border-bottom pb-4 mb-4">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <h4>Pedido #{{ pedido.id }}</h4>
+                                    <div>
+                                        <span class="badge 
+                                            {% if pedido.estado == 'completado' %}bg-success
+                                            {% elif pedido.estado == 'pendiente' %}bg-warning text-dark
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ pedido.estado|capitalize }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-muted">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                                
+                                <div class="table-responsive mt-3">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th>Cantidad</th>
+                                                <th>Precio Unitario</th>
+                                                <th>Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in pedido.items %}
+                                            <tr>
+                                                <td>{{ item.plato.nombre }}</td>
+                                                <td>{{ item.cantidad }}</td>
+                                                <td>${{ "{:,.0f}".format(item.precio_unitario) }}</td>
+                                                <td>${{ "{:,.0f}".format(item.precio_unitario * item.cantidad) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="text-end mt-3">
+                                    <p class="fw-bold fs-5">
+                                        Total: ${{ "{:,.0f}".format(pedido.total) }}
+                                        <small class="text-muted d-block">Incluye $2.000 de envío</small>
+                                    </p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-shopping-bag fa-4x text-muted mb-4"></i>
+                                <h4 class="mb-3">Aún no tienes pedidos registrados</h4>
+                                <a href="{{ url_for('menu') }}" class="btn btn-primary">
+                                    <i class="fas fa-utensils me-2"></i>Ir al Menú
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

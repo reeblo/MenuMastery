@@ -1,0 +1,18 @@
+<!-- perfil.html -->
+{% extends "base.html" %}
+
+{% block title %}
+Perfil de Usuario
+{% endblock %}
+
+{% block content %}
+<div class="card mx-auto shadow" style="max-width: 500px;">
+    <div class="card-body text-center">
+        <h3 class="card-title">Perfil de Usuario</h3>
+        <img src="https://via.placeholder.com/150" class="rounded-circle mb-3" alt="Foto de perfil">
+        <p><strong>Nombre:</strong> {{ nombre }}</p>
+        <p><strong>Correo:</strong> {{ correo }}</p>
+        <a href="/" class="btn btn-secondary mt-2">Volver al inicio</a>
+    </div>
+</div>
+{% endblock %}

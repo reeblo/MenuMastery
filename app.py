@@ -8,43 +8,55 @@ from flask_login import UserMixin
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, IntegerField, SubmitField, DateField, TimeField
 from wtforms.validators import DataRequired, Email
-
-def load_user(user_id):
-    return Usuario.query.get(int(user_id))
-
+from wtforms import SelectField
 
 app = Flask(__name__)
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-# Configuración de la base de datos SQLite
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'menumastery.db')
+app.config['SECRET_KEY'] = '12345'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'menumastery.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)  # ← Solo esta línea debe quedarse
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
 
 # Modelos de la base de datos
-
 class ReservaForm(FlaskForm):
-    fecha = DateField('Fecha', validators=[DataRequired()])
-    hora = TimeField('Hora', validators=[DataRequired()])
-    personas = IntegerField('Número de personas', validators=[DataRequired()])
-    comentarios = TextAreaField('Comentarios')
-    nombre = StringField('Nombre', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    telefono = StringField('Teléfono', validators=[DataRequired()])
+    fecha = DateField('Fecha', format='%Y-%m-%d', validators=[DataRequired()])  # Añade esto
+    hora = SelectField('Hora', choices=[
+        ('12:00', '12:00 PM'),
+        ('13:00', '1:00 PM'),
+        ('14:00', '2:00 PM'),
+        ('15:00', '3:00 PM'),
+        ('18:00', '6:00 PM'),
+        ('19:00', '7:00 PM'),
+        ('20:00', '8:00 PM')
+    ], validators=[DataRequired()])
+    personas = IntegerField('Número de personas', validators=[DataRequired()])  # Añade esto
+    comentarios = TextAreaField('Comentarios adicionales')  # Añade esto
     submit = SubmitField('Confirmar Reserva')
 
-class Usuario(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    contraseña = db.Column(db.String(200), nullable=False)
 
-class Categoria(db.Model):
+class Categoria(db.Model): 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=False, unique=True)
     descripcion = db.Column(db.String(200))
+
+class Usuario(db.Model, UserMixin):
+    __tablename__ = 'usuario'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    contraseña = db.Column(db.String(200), nullable=False)  # Usa solo un nombre (consistencia)
+
+    # Propiedad para compatibilidad con Flask-Login
+    @property
+    def password(self):
+        return self.contraseña
+
+    @password.setter
+    def password(self, value):
+        self.contraseña = generate_password_hash(value)
 
 class Plato(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -81,6 +93,23 @@ class Resena(db.Model):
     aprobado = db.Column(db.Boolean, default=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
+# Añade este nuevo modelo para el historial
+class Pedido(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    total = db.Column(db.Float, nullable=False)
+    estado = db.Column(db.String(20), default='pendiente')
+    items = db.relationship('PedidoItem', backref='pedido', lazy=True)
+
+class PedidoItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedido.id'), nullable=False)
+    plato_id = db.Column(db.Integer, db.ForeignKey('plato.id'), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    precio_unitario = db.Column(db.Float, nullable=False)
+    plato = db.relationship('Plato', backref='en_pedidos')
+
 # Crear las tablas en la base de datos
 with app.app_context():
     db.create_all()
@@ -111,6 +140,12 @@ def load_user(user_id):
 def inicio():
     return render_template('index.html')
 
+@app.route('/enviar-resena', methods=['POST'])
+def enviar_resena():
+    # Código para guardar la reseña
+    return redirect(url_for('mis_reservas'))  # o a donde quieras redirigir
+
+
 
 @app.route('/perfil')
 def perfil():
@@ -123,28 +158,29 @@ def menu():
 
 @app.route('/reservas', methods=['GET', 'POST'])
 def reservas():
-    if request.method == 'POST':
+    form = ReservaForm()  # Crea una instancia del formulario
+    
+    if form.validate_on_submit():  # Esto reemplaza request.method == 'POST'
         try:
-            fecha_str = request.form['fecha']
-            hora_str = request.form['hora']
-            fecha_reserva = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
-            personas = int(request.form['personas'])
+            fecha_reserva = datetime.strptime(
+                f"{form.fecha.data} {form.hora.data}", 
+                "%Y-%m-%d %H:%M"
+            )
             
             if 'user_id' not in session:
-                # Guardar datos de reserva temporalmente
                 session['reserva_temp'] = {
-                    'fecha': fecha_str,
-                    'hora': hora_str,
-                    'personas': personas,
-                    'comentarios': request.form.get('comentarios', '')
+                    'fecha': form.fecha.data.strftime('%Y-%m-%d'),
+                    'hora': form.hora.data.strftime('%H:%M'),
+                    'personas': form.personas.data,
+                    'comentarios': form.comentarios.data
                 }
                 flash('Por favor inicia sesión o regístrate para completar la reserva', 'info')
                 return redirect(url_for('login'))
             
             nueva_reserva = Reserva(
                 fecha=fecha_reserva,
-                personas=personas,
-                comentarios=request.form.get('comentarios', ''),
+                personas=form.personas.data,
+                comentarios=form.comentarios.data,
                 usuario_id=session['user_id']
             )
             
@@ -156,50 +192,107 @@ def reservas():
         
         except Exception as e:
             db.session.rollback()
-            flash('Error al procesar la reserva. Por favor intenta nuevamente.', 'danger')
+            flash(f'Error al procesar la reserva: {str(e)}', 'danger')
     
-    return render_template('reservas.html')
+    return render_template('reservas.html', form=form)  # Pasa el formulario a la plantilla 
+
 
 @app.route('/contacto', methods=['GET', 'POST'])
 def contacto():
+    resenas = Resena.query.filter_by(aprobado=True).order_by(Resena.fecha.desc()).limit(5).all()
+    
     if request.method == 'POST':
-        if 'enviar_resena' in request.form:
-            # Procesar reseña
+        if 'enviar_resena' in request.form:  # Formulario de reseñas
             try:
                 nueva_resena = Resena(
                     calificacion=int(request.form['rating']),
                     comentario=request.form['comentario'],
                     nombre=request.form.get('nombre', 'Anónimo'),
-                    aprobado=False  # Las reseñas requieren aprobación
+                    aprobado=False
                 )
                 db.session.add(nueva_resena)
                 db.session.commit()
                 flash('Gracias por tu reseña! Será publicada después de ser aprobada.', 'success')
             except Exception as e:
                 db.session.rollback()
-                flash('Error al enviar la reseña. Por favor intenta nuevamente.', 'danger')
+                flash(f'Error al enviar la reseña: {str(e)}', 'danger')
         
-        elif 'enviar_contacto' in request.form:
-            # Procesar mensaje de contacto (simulado)
+        elif 'enviar_contacto' in request.form:  # Formulario de contacto
             flash('Mensaje enviado con éxito. Nos pondremos en contacto pronto!', 'success')
         
-        return redirect(url_for('contacto.html'))
+        return redirect(url_for('contacto'))
     
-    # Obtener reseñas aprobadas
-    resenas = Resena.query.filter_by(aprobado=True).order_by(Resena.fecha.desc()).limit(5).all()
     return render_template('contacto.html', resenas=resenas)
 
-@app.route('/carrito')
+@app.route('/carrito', methods=['GET', 'POST'])
 def carrito():
     if 'user_id' not in session:
         flash('Por favor inicia sesión para ver tu carrito', 'info')
         return redirect(url_for('login'))
     
+    if request.method == 'POST':
+        # Procesar el pago y crear el pedido
+        items = CarritoItem.query.filter_by(usuario_id=session['user_id']).all()
+        
+        if not items:
+            flash('Tu carrito está vacío', 'warning')
+            return redirect(url_for('carrito'))
+        
+        try:
+            # Crear el pedido
+            total = sum(item.plato.precio * item.cantidad for item in items) + 2000  # + envío
+            nuevo_pedido = Pedido(
+                usuario_id=session['user_id'],
+                total=total,
+                estado='completado' if request.form.get('payment_type') == 'online' else 'pendiente'
+            )
+            db.session.add(nuevo_pedido)
+            db.session.flush()  # Para obtener el ID del pedido
+            
+            # Crear los items del pedido
+            for item in items:
+                pedido_item = PedidoItem(
+                    pedido_id=nuevo_pedido.id,
+                    plato_id=item.plato_id,
+                    cantidad=item.cantidad,
+                    precio_unitario=item.plato.precio
+                )
+                db.session.add(pedido_item)
+                # Eliminar del carrito
+                db.session.delete(item)
+            
+            db.session.commit()
+            flash('Pedido realizado con éxito!', 'success')
+            return redirect(url_for('historial_compras'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al procesar el pedido: {str(e)}', 'danger')
+    
+    # GET request
     items = CarritoItem.query.filter_by(usuario_id=session['user_id']).all()
     subtotal = sum(item.plato.precio * item.cantidad for item in items)
     total = subtotal + 2000  # Costo de envío fijo
     
-    return render_template('carrocompras.html', items=items, subtotal=subtotal, total=total)
+    # Obtener historial de pedidos
+    pedidos = Pedido.query.filter_by(usuario_id=session['user_id'])\
+                        .order_by(Pedido.fecha.desc()).all()
+    
+    return render_template('carrocompras.html', 
+                        cart_items=items,
+                        pedidos=pedidos,
+                        subtotal=subtotal, 
+                        total=total)
+
+@app.route('/historial')
+def historial_compras():
+    if 'user_id' not in session:
+        flash('Por favor inicia sesión para ver tu historial', 'info')
+        return redirect(url_for('login'))
+    
+    pedidos = Pedido.query.filter_by(usuario_id=session['user_id'])\
+                        .order_by(Pedido.fecha.desc()).all()
+    return render_template('historial.html', pedidos=pedidos)
 
 # Rutas de autenticación
 @app.route('/login', methods=['GET', 'POST'])

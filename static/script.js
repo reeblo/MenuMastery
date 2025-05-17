@@ -110,6 +110,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+// En carrocompras.html, actualiza el script:
+document.getElementById('checkout-btn').addEventListener('click', function() {
+    fetch('{{ url_for("carrito") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'payment_type=online'
+    }).then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        }
+    });
+});
+
+document.getElementById('cash-btn').addEventListener('click', function() {
+    fetch('{{ url_for("carrito") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'payment_type=cash'
+    }).then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        }
+    });
+});
+
 
 
 
