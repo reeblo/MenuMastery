@@ -2,40 +2,35 @@
 
 {% block title %}Menú - MenuMastery{% endblock %}
 
+
+
+
 {% block content %}
-<section class="menu-section py-5">
-    <div class="container">
-        <div class="row">
-            <!-- Sidebar de categorías -->
-            <div class="col-lg-3 mb-4 mb-lg-0">
-                <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
-                    <div class="card-body text-center">
-                        <img src="{{ url_for('static', filename='img/utensils-icon.png') }}" alt="Ícono menú" class="img-fluid mb-3" width="60">
-                        <h3 class="h4 mb-4">NUESTRO MENÚ</h3>
-                        
-                        <div class="d-flex justify-content-center mb-3">
-                            <div class="circle bg-primary mx-1"></div>
-                            <div class="circle bg-secondary mx-1"></div>
-                        </div>
-                        
-                        <nav class="nav flex-column">
-                            <a class="nav-link menu-category active" href="#" data-category="all">Todos los platos</a>
-                            {% for categoria in menu %}
-                            <a class="nav-link menu-category" href="#" data-category="cat-{{ categoria.id }}">
-                                {{ categoria.nombre }}
-                            </a>
-                            {% endfor %}
-                        </nav>
-                        
-                        <img src="{{ url_for('static', filename='img/chef-icon.png') }}" alt="Chef" class="img-fluid mt-4" width="80">
-                    </div>
+<section class="menu-section">
+    <div class="container-fluid px-0"> <!-- Contenedor fluido sin padding horizontal -->
+        <div class="row g-0"> <!-- Sin gutter entre columnas -->
+
+            <!-- Sidebar (usando tus estilos originales + Bootstrap) -->
+            <aside class="col-lg-2 menu-sidebar">
+                <div class="menu-logo">
+                    <img src="{{ url_for('static', filename='imagenes/cutlery-1_icon-icons.com_62936.png') }}" alt="Logo Menú" class="img-fluid">
+                </div> 
+                <div class="menu-label">MENÚ</div>
+    
+                <div class="menu-decorations">
+                    <div class="circle"></div>
+                    <div class="circle filled"></div>
                 </div>
-            </div>
-            
-            <!-- Contenido principal del menú -->
-            <div class="col-lg-9">
-                <!-- Filtros móviles -->
-                <div class="d-lg-none mb-4">
+
+                <div class="menu-chef">
+                    <img src="{{ url_for('static', filename='imagenes/chef_87588.png') }}" alt="logo del chef" class="img-fluid">
+                </div>
+            </aside>
+        
+            <!-- Contenido principal -->
+            <div class="col-lg-10 menu-content">
+                <!-- Filtro móvil -->
+                <div class="d-lg-none mobile-filter py-3 px-3">
                     <select class="form-select" id="mobile-category-filter">
                         <option value="all">Todos los platos</option>
                         {% for categoria in menu %}
@@ -45,16 +40,23 @@
                 </div>
                 
                 <!-- Listado de platos -->
-                <div class="row" id="platos-container">
+                <div class="row g-4 px-3 py-3" id="platos-container">
                     {% for categoria in menu %}
                     {% for plato in categoria.platos %}
-                    <div class="col-md-6 col-xl-4 mb-4 plato-item" data-category="cat-{{ categoria.id }}">
-                        <div class="card h-100 border-0 shadow-sm">
+                    <div class="col-md-6 col-xl-4 plato-item" 
+                        data-category="cat-{{ categoria.id }}"
+                        data-destacado="{{ 'true' if plato.destacado else 'false' }}">
+                        
+                        <div class="dish-card h-100">
                             {% if plato.destacado %}
-                            <span class="badge bg-danger position-absolute top-0 end-0 m-2">Destacado</span>
+                            <div class="highlight-badge">¡Destacado!</div>
                             {% endif %}
                             
-                            <img src="{{ url_for('static', filename='img/platos/' + plato.imagen) }}" class="card-img-top" alt="{{ plato.nombre }}" style="height: 180px; object-fit: cover;">
+                            <div class="dish-img-container">
+                                <img src="{{ url_for('static', filename='img/platos/' + (plato.imagen or 'default-dish.jpg')) }}" 
+                                    class="dish-img img-fluid" 
+                                    alt="{{ plato.nombre }}">
+                            </div>
                             
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -62,20 +64,23 @@
                                     <span class="badge bg-primary">{{ categoria.nombre }}</span>
                                 </div>
                                 
-                                <p class="card-text text-muted small">{{ plato.descripcion }}</p>
+                                <p class="card-text text-muted flex-grow-1">{{ plato.descripcion or 'Descripción no disponible' }}</p>
                                 
                                 <div class="d-flex justify-content-between align-items-center mt-3">
                                     <div class="rating">
                                         {% for i in range(5) %}
-                                        <i class="fas fa-star {% if i < 4 %}text-warning{% else %}text-secondary{% endif %}"></i>
+                                        <i class="fas fa-star {{ 'text-warning' if i < (plato.valoracion or 4) else 'text-muted' }}"></i>
                                         {% endfor %}
                                     </div>
-                                    <h5 class="text-primary mb-0">${{ "{:,.0f}".format(plato.precio) }}</h5>
+                                    <span class="price-tag">${{ "{:,.0f}".format(plato.precio) }}</span>
                                 </div>
                             </div>
                             
-                            <div class="card-footer bg-white border-0">
-                                <button class="btn btn-outline-primary w-100 add-to-cart" data-plato-id="{{ plato.id }}">
+                            <div class="card-footer bg-white border-top-0">
+                                <button class="btn btn-primary w-100 add-to-cart" 
+                                        data-plato-id="{{ plato.id }}"
+                                        data-plato-nombre="{{ plato.nombre }}"
+                                        data-plato-precio="{{ plato.precio }}">
                                     <i class="fas fa-plus me-2"></i> Añadir al pedido
                                 </button>
                             </div>
@@ -92,19 +97,47 @@
 
 {% block scripts %}
 <script>
-// Filtrado de categorías
-document.querySelectorAll('.menu-category').forEach(link => {
+// Función para añadir al carrito (sin cambios)
+document.querySelectorAll('.add-to-cart').forEach(button => {
+    button.addEventListener('click', function() {
+        const platoId = this.getAttribute('data-plato-id');
+        const platoNombre = this.getAttribute('data-plato-nombre');
+        
+        // Feedback visual
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-check me-2"></i> Añadido';
+        this.classList.remove('btn-primary');
+        this.classList.add('btn-success');
+        
+        setTimeout(() => {
+            this.innerHTML = originalHTML;
+            this.classList.remove('btn-success');
+            this.classList.add('btn-primary');
+        }, 2000);
+        
+        // Notificación
+        showToast(`"${platoNombre}" añadido al carrito`);
+        addToCart(platoId);
+    });
+});
+
+// Filtrado por categorías (funcionalidad existente)
+document.querySelectorAll('.category-link').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
         const category = this.getAttribute('data-category');
         
-        // Actualizar active state
-        document.querySelectorAll('.menu-category').forEach(el => el.classList.remove('active'));
+        // Remover activo de todos los links
+        document.querySelectorAll('.category-link').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Agregar activo al clickeado
         this.classList.add('active');
         
         // Filtrar platos
         document.querySelectorAll('.plato-item').forEach(item => {
-            if(category === 'all' || item.getAttribute('data-category') === category) {
+            if (category === 'all' || item.getAttribute('data-category') === category) {
                 item.style.display = 'block';
             } else {
                 item.style.display = 'none';
@@ -117,7 +150,7 @@ document.querySelectorAll('.menu-category').forEach(link => {
 document.getElementById('mobile-category-filter').addEventListener('change', function() {
     const category = this.value;
     document.querySelectorAll('.plato-item').forEach(item => {
-        if(category === 'all' || item.getAttribute('data-category') === category) {
+        if (category === 'all' || item.getAttribute('data-category') === category) {
             item.style.display = 'block';
         } else {
             item.style.display = 'none';
@@ -125,14 +158,35 @@ document.getElementById('mobile-category-filter').addEventListener('change', fun
     });
 });
 
-// Añadir al carrito
-document.querySelectorAll('.add-to-cart').forEach(button => {
-    button.addEventListener('click', function() {
-        const platoId = this.getAttribute('data-plato-id');
-        // Aquí iría la lógica para añadir al carrito
-        alert(`Plato ${platoId} añadido al carrito`);
-        // En una implementación real, haríamos una petición AJAX
+// Funciones auxiliares (sin cambios)
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.padding = '10px 15px';
+    toast.style.background = '#28a745';
+    toast.style.color = 'white';
+    toast.style.borderRadius = '5px';
+    toast.style.zIndex = '1000';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function addToCart(platoId) {
+    fetch('/agregar-carrito', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plato_id: platoId, cantidad: 1 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success && document.getElementById('cart-count')) {
+            document.getElementById('cart-count').textContent = data.cart_count;
+        }
     });
-});
+}
 </script>
 {% endblock %}

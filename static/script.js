@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalSlides = slideItems.length;
     let intervalId;
 
-    // Función para mover el carrusel
     function goToSlide(index) {
         if (index < 0) {
             index = totalSlides - 1;
@@ -25,34 +24,32 @@ document.addEventListener('DOMContentLoaded', function() {
             indicator.classList.toggle('active', i === currentIndex);
         });
         
-        // Reiniciar animaciones
         resetAnimations();
     }
 
-    // Función para reiniciar animaciones
     function resetAnimations() {
         const activeSlide = slideItems[currentIndex];
         const h2 = activeSlide.querySelector('h2');
         const p = activeSlide.querySelector('p');
         const btn = activeSlide.querySelector('.btn');
         
-        // Resetear animaciones
+        
         h2.style.animation = 'none';
         p.style.animation = 'none';
         btn.style.animation = 'none';
         
-        // Forzar reflow
+        
         void h2.offsetWidth;
         void p.offsetWidth;
         void btn.offsetWidth;
         
-        // Reactivar animaciones
+        
         h2.style.animation = 'fadeInUp 0.8s ease';
         p.style.animation = 'fadeInUp 0.8s ease 0.2s forwards';
         btn.style.animation = 'fadeInUp 0.8s ease 0.4s forwards';
     }
 
-    // Event listeners para controles
+
     prevBtn.addEventListener('click', () => {
         clearInterval(intervalId);
         goToSlide(currentIndex - 1);
@@ -65,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
         startAutoSlide();
     });
 
-    // Event listeners para indicadores
     indicators.forEach((indicator, index) => {
         indicator.addEventListener('click', () => {
             clearInterval(intervalId);
@@ -110,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// En carrocompras.html, actualiza el script:
+
 document.getElementById('checkout-btn').addEventListener('click', function() {
     fetch('{{ url_for("carrito") }}', {
         method: 'POST',

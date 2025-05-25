@@ -280,163 +280,133 @@ body {
 
 /* Menú */
 
+/* ===== ESTILOS GENERALES ===== */
+body {
+  font-family: 'Arial', sans-serif;
+  padding-top: 75px;
+  background-color: #f8f9fa;
+}
+
+/* ===== SIDEBAR ===== */
 .menu-sidebar {
   position: fixed;
   top: 75px;
   left: 0;
   width: 150px;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 75px);
   background-color: #c7e0f4;
-  color: #0e0f0f;
-  transition: left 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  padding: 20px 0;
+  z-index: 800;
 }
 
-.menu-logo {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 3px;
-}
-
-.menu-logo img{
+.menu-logo img {
   width: 60px;
   height: 60px;
+  object-fit: contain;
 }
 
 .menu-label {
   font-size: 24px;
   font-weight: bold;
-  writing-mode: vertical-lr; 
-  text-align: center; 
-  height: 100px; 
-  width: 50px; 
-  line-height: 1.2; 
-  display: flex;
-  justify-content: center; 
-  align-items: center; 
-  margin-top: 30px; 
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  margin: 30px 0;
+  letter-spacing: 3px;
 }
 
 .menu-decorations {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
   gap: 20px;
-  margin-top: 110px;
+  margin: 30px 0;
 }
 
 .circle {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background-color: white;
-  border: 2px solid black;
+  border: 2px solid #000;
 }
 
 .circle.filled {
-  background-color: black;
+  background-color: #000;
 }
 
 .menu-chef img {
   width: 80px;
-  margin-top: 30px;
+  position: absolute;
+  bottom: 20px;
 }
 
-/*contenido de productos*/
+/* ===== CONTENIDO PRINCIPAL ===== */
 .menu-content {
   margin-left: 150px;
-  transition: margin-left 0.3s ease-in-out;
+  min-height: calc(100vh - 75px);
 }
 
-/* Categorías de menú */
-.menu-categories {
+/* ===== TARJETAS DE PLATOS ===== */
+.dish-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease;
+  height: 100%;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
 }
 
-.category-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin: 5px;
-  cursor: pointer;
-  border-radius: 5px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  text-align: center;
-  display: inline-block;
+.dish-card:hover {
+  transform: translateY(-5px);
 }
 
-.category-button:hover {
-  background-color: #2980b9;
-  transform: scale(1.05);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+.dish-img-container {
+  height: 180px;
+  overflow: hidden;
 }
 
-.category-button:active {
-  transform: scale(0.98);
-}
-
-/* Elementos del menú */
-.menu-items {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 30px;
-}
-
-.menu-item {
-  width: 200px;
-  background-color: #ecf0f1;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.menu-item:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-}
-
-.menu-item img {
+.dish-img {
   width: 100%;
-  height: auto;
-  border-radius: 5px;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
-.rating i {
-  color: #FFD700;
-}
-
-.order-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 5px;
-  width: 100%;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.order-button:hover {
-  background-color: #2980b9;
+.dish-card:hover .dish-img {
   transform: scale(1.05);
 }
 
-.order-button:active {
-  transform: scale(0.98);
+.highlight-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #e74c3c;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.price-tag {
+  color: #27ae60;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+  .menu-sidebar {
+    display: none;
+  }
+  
+  .menu-content {
+    margin-left: 0;
+  }
 }
 
 /* Estilos para la sección de reservas */

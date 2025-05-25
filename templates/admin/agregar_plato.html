@@ -1,0 +1,130 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Agregar Nuevo Plato</h2>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Nombre del Plato -->
+                        <div class="mb-3">
+                            {{ form.nombre.label(class="form-label fw-bold") }}
+                            {{ form.nombre(class="form-control" + (" is-invalid" if form.nombre.errors else "")) }}
+                            {% for error in form.nombre.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Descripción -->
+                        <div class="mb-3">
+                            {{ form.descripcion.label(class="form-label fw-bold") }}
+                            {{ form.descripcion(class="form-control", rows=4) }}
+                            <small class="text-muted">Máximo 500 caracteres</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <!-- Imagen -->
+                        <div class="mb-3">
+                            <label for="imagen" class="form-label fw-bold">Imagen del Plato</label>
+                            <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*" required>
+                            <div class="mt-2">
+                                <img id="imagen-preview" src="#" alt="Vista previa de la imagen" 
+                                     class="img-thumbnail d-none" style="max-height: 150px;">
+                            </div>
+                            <small class="text-muted">Formatos: JPG, PNG, JPEG (Máx. 2MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <!-- Precio -->
+                        <div class="mb-3">
+                            {{ form.precio.label(class="form-label fw-bold") }}
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.precio(class="form-control" + (" is-invalid" if form.precio.errors else "")) }}
+                            </div>
+                            {% for error in form.precio.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <!-- Categoría -->
+                        <div class="mb-3">
+                            {{ form.categoria_id.label(class="form-label fw-bold") }}
+                            {{ form.categoria_id(class="form-select" + (" is-invalid" if form.categoria_id.errors else "")) }}
+                            {% for error in form.categoria_id.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <!-- Destacado -->
+                        <div class="mb-3">
+                            {{ form.destacado.label(class="form-label fw-bold") }}
+                            {{ form.destacado(class="form-select" + (" is-invalid" if form.destacado.errors else "")) }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('gestion_platos') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i> Volver
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i> Guardar Plato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Vista previa de la imagen
+    document.getElementById('imagen').addEventListener('change', function(e) {
+        const preview = document.getElementById('imagen-preview');
+        const file = e.target.files[0];
+        
+        if (file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('d-none');
+            }
+            
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = "#";
+            preview.classList.add('d-none');
+        }
+    });
+
+    // Validación de tamaño de imagen
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const input = document.getElementById('imagen');
+        if (input.files && input.files[0]) {
+            const fileSize = input.files[0].size / 1024 / 1024; // in MB
+            if (fileSize > 2) {
+                e.preventDefault();
+                alert('La imagen no debe exceder los 2MB');
+                input.focus();
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

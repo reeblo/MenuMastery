@@ -1,0 +1,70 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Plato: {{ plato.nombre }}</h2>
+    
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+            {{ form.nombre.label(class="form-label") }}
+            {{ form.nombre(class="form-control") }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.descripcion.label(class="form-label") }}
+            {{ form.descripcion(class="form-control", rows=3) }}
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.precio.label(class="form-label") }}
+                {{ form.precio(class="form-control") }}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                {{ form.categoria_id.label(class="form-label") }}
+                {{ form.categoria_id(class="form-select") }}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.destacado.label(class="form-label") }}
+                {{ form.destacado(class="form-select") }}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Imagen Actual</label>
+                {% if plato.imagen %}
+                <div>
+                    <img src="{{ url_for('static', filename='img/platos/' + plato.imagen) }}" 
+                         alt="{{ plato.nombre }}" width="100" class="img-thumbnail mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="eliminar_imagen" id="eliminar_imagen">
+                        <label class="form-check-label" for="eliminar_imagen">
+                            Eliminar imagen actual
+                        </label>
+                    </div>
+                </div>
+                {% else %}
+                <span class="text-muted">No hay imagen</span>
+                {% endif %}
+                
+                <label for="imagen" class="form-label mt-2">Nueva Imagen</label>
+                <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
+                <small class="text-muted">Formatos: JPG, PNG, JPEG (Máx. 2MB)</small>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Guardar Cambios
+        </button>
+        
+        <a href="{{ url_for('gestion_platos') }}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancelar
+        </a>
+    </form>
+</div>
+{% endblock %}

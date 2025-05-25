@@ -9,20 +9,37 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, IntegerField, SubmitField, DateField, TimeField
 from wtforms.validators import DataRequired, Email
 from wtforms import SelectField
+from flask_login import login_required, current_user
+from flask_login import login_user, current_user, login_required, logout_user
+from flask_wtf.csrf import CSRFProtect
+from werkzeug.utils import secure_filename
+from wtforms import StringField, PasswordField, SubmitField
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '12345'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'menumastery.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+csrf = CSRFProtect(app)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+UPLOAD_FOLDER = os.path.join('static', 'img', 'platos')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB máximo
+
+
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])  # Cambiado de username a email
+    password = PasswordField('Contraseña', validators=[DataRequired()])
+    submit = SubmitField('Iniciar sesión')
 
 # Modelos de la base de datos
 class ReservaForm(FlaskForm):
-    fecha = DateField('Fecha', format='%Y-%m-%d', validators=[DataRequired()])  # Añade esto
+    fecha = DateField('Fecha', format='%Y-%m-%d', validators=[DataRequired()])  
     hora = SelectField('Hora', choices=[
         ('12:00', '12:00 PM'),
         ('13:00', '1:00 PM'),
@@ -32,8 +49,8 @@ class ReservaForm(FlaskForm):
         ('19:00', '7:00 PM'),
         ('20:00', '8:00 PM')
     ], validators=[DataRequired()])
-    personas = IntegerField('Número de personas', validators=[DataRequired()])  # Añade esto
-    comentarios = TextAreaField('Comentarios adicionales')  # Añade esto
+    personas = IntegerField('Número de personas', validators=[DataRequired()])  
+    comentarios = TextAreaField('Comentarios adicionales') 
     submit = SubmitField('Confirmar Reserva')
 
 
@@ -47,26 +64,28 @@ class Usuario(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    contraseña = db.Column(db.String(200), nullable=False)  # Usa solo un nombre (consistencia)
+    password = db.Column(db.String(200), nullable=False)
+    rol = db.Column(db.String(20), default='usuario')  # 'usuario' o 'admin'
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Propiedad para compatibilidad con Flask-Login
-    @property
-    def password(self):
-        return self.contraseña
-
-    @password.setter
-    def password(self, value):
-        self.contraseña = generate_password_hash(value)
+class PlatoForm(FlaskForm):
+    nombre = StringField('Nombre', validators=[DataRequired()])
+    descripcion = TextAreaField('Descripción')
+    precio = IntegerField('Precio', validators=[DataRequired()])
+    imagen = StringField('Nombre de la imagen (ej: plato1.jpg)')
+    destacado = SelectField('Destacado', choices=[(False, 'No'), (True, 'Sí')], coerce=bool)
+    categoria_id = SelectField('Categoría', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Guardar Plato')
 
 class Plato(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text)
     precio = db.Column(db.Float, nullable=False)
-    imagen = db.Column(db.String(100))
+    imagen = db.Column(db.String(255))  # Unificado en un solo campo
     destacado = db.Column(db.Boolean, default=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
-    categoria = db.relationship('Categoria', backref='platos')
+    categoria = db.relationship('Categoria', backref='platos') 
 
 class Reserva(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -93,14 +112,13 @@ class Resena(db.Model):
     aprobado = db.Column(db.Boolean, default=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Añade este nuevo modelo para el historial
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
     total = db.Column(db.Float, nullable=False)
     estado = db.Column(db.String(20), default='pendiente')
-    items = db.relationship('PedidoItem', backref='pedido', lazy=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario = db.relationship('Usuario', backref='pedidos')
 
 class PedidoItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -108,11 +126,180 @@ class PedidoItem(db.Model):
     plato_id = db.Column(db.Integer, db.ForeignKey('plato.id'), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
-    plato = db.relationship('Plato', backref='en_pedidos')
+    plato = db.relationship('Plato')
+    pedido = db.relationship('Pedido', backref='items')
 
 # Crear las tablas en la base de datos
 with app.app_context():
     db.create_all()
+
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+#creacion de usuario admin
+def crear_admin_inicial():
+    with app.app_context():
+        if not Usuario.query.filter_by(email='admin@menumastery.com').first():
+            admin = Usuario(
+                nombre='Administrador',
+                email='admin@menumastery.com',
+                password=generate_password_hash('Admin123'),
+                rol='admin'
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("Usuario admin creado: admin@menumastery.com / Admin123")
+
+@app.route('/admin/panel')
+@login_required
+def admin_panel():
+    if not current_user.is_authenticated or current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    # Agregar estadísticas
+    total_usuarios = Usuario.query.count()
+    pedidos_hoy = Pedido.query.filter(Pedido.fecha >= datetime.today().date()).count()
+    productos_inventario = Plato.query.count()
+    reservas_activas = Reserva.query.filter(Reserva.fecha >= datetime.now()).count()
+    
+    return render_template('admin/base.html', 
+                        total_usuarios=total_usuarios,
+                        pedidos_hoy=pedidos_hoy,
+                        productos_inventario=productos_inventario,
+                        reservas_activas=reservas_activas)
+
+@app.route('/admin/platos/agregar', methods=['GET', 'POST'])
+@login_required
+def agregar_plato():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    form = PlatoForm()
+    form.categoria_id.choices = [(c.id, c.nombre) for c in Categoria.query.order_by('nombre')]
+    
+    if form.validate_on_submit():
+        try:
+            # Validar que se haya subido una imagen si es requerido
+            imagen = request.files.get('imagen')
+            if not imagen or imagen.filename == '':
+                flash('Debe seleccionar una imagen para el plato', 'danger')
+                return redirect(url_for('agregar_plato'))
+            
+            if not allowed_file(imagen.filename):
+                flash('Formato de imagen no permitido. Use: PNG, JPG, JPEG o GIF', 'danger')
+                return redirect(url_for('agregar_plato'))
+            
+            # Procesar la imagen
+            filename = secure_filename(imagen.filename)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            imagen.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            
+            # Crear el plato
+            nuevo_plato = Plato(
+                nombre=form.nombre.data,
+                descripcion=form.descripcion.data,
+                precio=form.precio.data,
+                imagen=filename,
+                destacado=form.destacado.data,
+                categoria_id=form.categoria_id.data
+            )
+            
+            db.session.add(nuevo_plato)
+            db.session.commit()
+            
+            flash('Plato agregado exitosamente!', 'success')
+            return redirect(url_for('gestion_platos'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al agregar plato: {str(e)}', 'danger')
+    
+    return render_template('admin/agregar_plato.html', form=form)
+
+@app.route('/admin/platos/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_plato(id):
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    plato = Plato.query.get_or_404(id)
+    form = PlatoForm(obj=plato)
+    form.categoria_id.choices = [(c.id, c.nombre) for c in Categoria.query.order_by('nombre')]
+    
+    if form.validate_on_submit():
+        try:
+            # Procesar imagen si se subió una nueva
+            imagen = request.files.get('imagen')
+            if imagen and imagen.filename != '':
+                if allowed_file(imagen.filename):
+                    # Eliminar imagen anterior si existe
+                    if plato.imagen:
+                        try:
+                            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], plato.imagen))
+                        except:
+                            pass
+                    
+                    filename = secure_filename(imagen.filename)
+                    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                    imagen.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    plato.imagen = filename
+            
+            # Actualizar otros campos
+            plato.nombre = form.nombre.data
+            plato.descripcion = form.descripcion.data
+            plato.precio = form.precio.data
+            plato.destacado = form.destacado.data
+            plato.categoria_id = form.categoria_id.data
+            
+            db.session.commit()
+            flash('Plato actualizado exitosamente!', 'success')
+            return redirect(url_for('gestion_platos'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar plato: {str(e)}', 'danger')
+    
+    return render_template('admin/editar_plato.html', form=form, plato=plato)
+
+
+@app.route('/admin/platos/eliminar/<int:id>', methods=['POST'])
+@login_required
+def eliminar_plato(id):
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    plato = Plato.query.get_or_404(id)
+    try:
+        # Eliminar la imagen asociada si existe
+        if plato.imagen:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], plato.imagen))
+            except Exception as e:
+                print(f"Error al eliminar imagen: {str(e)}")
+        
+        db.session.delete(plato)
+        db.session.commit()
+        flash('Plato eliminado exitosamente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar plato: {str(e)}', 'danger')
+    
+    return redirect(url_for('gestion_platos'))
+
+@app.route('/admin/gestion_platos')
+@login_required
+def gestion_platos():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    platos = Plato.query.order_by(Plato.nombre).all()
+    return render_template('admin/gestion_platos.html', platos=platos)
 
 # Funciones de ayuda
 def agregar_datos_iniciales():
@@ -126,10 +313,7 @@ def agregar_datos_iniciales():
             db.session.add_all(categorias)
             db.session.commit()
 
-# Llamar a la función para agregar datos iniciales
-agregar_datos_iniciales()
 
-# Rutas principales
 @login_manager.user_loader
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
@@ -153,7 +337,7 @@ def perfil():
 
 @app.route('/menu')
 def menu():
-    categorias = Categoria.query.all()
+    categorias = Categoria.query.options(db.joinedload(Categoria.platos)).all()
     return render_template('menu.html', menu=categorias)
 
 @app.route('/reservas', methods=['GET', 'POST'])
@@ -197,12 +381,12 @@ def reservas():
     return render_template('reservas.html', form=form)  # Pasa el formulario a la plantilla 
 
 
-@app.route('/contacto', methods=['GET', 'POST'])
+@app.route('/contacto', methods=['GET', 'POST'], endpoint='contacto')
 def contacto():
     resenas = Resena.query.filter_by(aprobado=True).order_by(Resena.fecha.desc()).limit(5).all()
     
     if request.method == 'POST':
-        if 'enviar_resena' in request.form:  # Formulario de reseñas
+        if 'enviar_resena' in request.form:  
             try:
                 nueva_resena = Resena(
                     calificacion=int(request.form['rating']),
@@ -297,28 +481,25 @@ def historial_compras():
 # Rutas de autenticación
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+    if current_user.is_authenticated:
+        return redirect(url_for('inicio'))
+    
+    form = LoginForm()
+    
+    if form.validate_on_submit():
+        user = Usuario.query.filter_by(email=form.email.data).first()
         
-        usuario = Usuario.query.filter_by(email=email).first()
-        
-        if usuario and check_password_hash(usuario.password, password):
-            session['user_id'] = usuario.id
-            session['user_nombre'] = usuario.nombre
-            session['user_email'] = usuario.email
+        if user and check_password_hash(user.password, form.password.data):
+            login_user(user)
             
-            # Completar reserva pendiente si existe
-            if 'reserva_temp' in session:
-                temp_reserva = session.pop('reserva_temp')
-                return redirect(url_for('reservas'))
-            
-            flash('Inicio de sesión exitoso!', 'success')
+            # Redirección basada en rol
+            if user.rol == 'admin':
+                return redirect(url_for('admin_panel'))
             return redirect(url_for('inicio'))
         
-        flash('Correo o contraseña incorrectos', 'danger')
+        flash('Credenciales incorrectas', 'danger')
     
-    return render_template('login.html')
+    return render_template('login.html', form=form)
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -356,10 +537,13 @@ def registro():
     
     return render_template('registro.html')
 
+from flask_login import logout_user
+
 @app.route('/logout')
 def logout():
+    logout_user()
     session.clear()
-    flash('Has cerrado sesión correctamente', 'info')
+    flash('Has cerrado sesión exitosamente.', 'info')
     return redirect(url_for('inicio'))
 
 # Rutas de usuario
@@ -372,18 +556,51 @@ def mis_reservas():
     reservas = Reserva.query.filter_by(usuario_id=session['user_id']).order_by(Reserva.fecha.desc()).all()
     return render_template('mis_reservas.html', reservas=reservas)
 
-# Manejo de errores
-@app.errorhandler(404)
-def pagina_no_encontrada(e):
-    return render_template('404.html'), 404
 
-@app.errorhandler(500)
-def error_servidor(e):
-    db.session.rollback()
-    return render_template('500.html'), 500
 
-if __name__ == '__main__':
+@app.route('/admin/productos/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_producto(id):
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    plato = Plato.query.get_or_404(id)
+    form = PlatoForm(obj=plato)
+    
+    if form.validate_on_submit():
+        try:
+            form.populate_obj(plato)
+            db.session.commit()
+            flash('Producto actualizado exitosamente!', 'success')
+            return redirect(url_for('admin_productos'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar producto: {str(e)}', 'danger')
+    
+    return render_template('admin/editar_producto.html', form=form, plato=plato)
+
+@app.route('/admin/productos/eliminar/<int:id>', methods=['POST'])
+@login_required
+def eliminar_producto(id):
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    plato = Plato.query.get_or_404(id)
+    try:
+        db.session.delete(plato)
+        db.session.commit()
+        flash('Producto eliminado exitosamente!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar producto: {str(e)}', 'danger')
+    
+    return redirect(url_for('admin_productos'))
+
+if __name__ == '__main__':    
     with app.app_context():
-        db.create_all()  # Crea las tablas si no existen
-        agregar_datos_iniciales()  # Ahora sí puedes usar queries
-    app.run(debug=True)
+        db.create_all()  
+        agregar_datos_iniciales()  
+        crear_admin_inicial() 
+    app.run(debug=True) 
