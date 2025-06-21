@@ -1,0 +1,41 @@
+{% extends "cocinero/base.html" %}
+
+{% block content %}
+<h2>Pedidos Pendientes</h2>
+<div class="list-group">
+  {% for pedido in pedidos %}
+  <div class="list-group-item">
+    <h5>Pedido #{{ pedido.id }}</h5>
+    <p>Cliente: {{ pedido.usuario.nombre }}</p>
+    <p>Hora: {{ pedido.fecha.strftime('%H:%M') }}</p>
+    <ul>
+      {% for item in pedido.items %}
+      <li>{{ item.cantidad }}x {{ item.plato.nombre }}</li>
+      {% endfor %}
+    </ul>
+    <button class="btn btn-success btn-marcar-list" data-id="{{ pedido.id }}">Marcar como Listo</button>
+  </div>
+  {% else %}
+  <p>No hay pedidos pendientes</p>
+  {% endfor %}
+</div>
+
+<script>
+// JavaScript para actualización en tiempo real
+const eventSource = new EventSource('/stream-pedidos');
+eventSource.onmessage = function(e) {
+  if (e.data === 'actualizar') {
+    location.reload();
+  }
+};
+
+// Marcar pedido como listo
+document.querySelectorAll('.btn-marcar-list').forEach(btn => {
+  btn.addEventListener('click', function() {
+    fetch(`/pedido/${this.dataset.id}/completar`, {
+      method: 'POST'
+    }).then(() => location.reload());
+  });
+});
+</script>
+{% endblock %}

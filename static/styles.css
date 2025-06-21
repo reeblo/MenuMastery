@@ -171,13 +171,13 @@ body {
   background-color: #c7e0f4 !important;
   color: #333 !important;
   padding: 0.5rem 0; /* Reducido para altura fija */
-  border-top: 2px solid #0077cc;
   font-family: 'Arial', sans-serif;
   height: 80px; /* Altura fija */
   display: flex;
   align-items: center; /* Centrado vertical */
   box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.05);
-  overflow: hidden; /* Evita desbordamientos */
+  overflow: hidden; 
+  z-index: 100;
 }
 
 .footer-contacto .container {
@@ -299,7 +299,7 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 20px 0;
-  z-index: 800;
+  z-index: 800; 
 }
 
 .menu-logo img {
@@ -315,6 +315,7 @@ body {
   transform: rotate(180deg);
   margin: 30px 0;
   letter-spacing: 3px;
+  margin-top: 80px;
 }
 
 .menu-decorations {
@@ -337,9 +338,10 @@ body {
 }
 
 .menu-chef img {
-  width: 80px;
-  position: absolute;
-  bottom: 20px;
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin-top: 100px;
 }
 
 /* ===== CONTENIDO PRINCIPAL ===== */

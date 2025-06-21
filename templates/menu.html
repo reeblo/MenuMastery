@@ -2,9 +2,6 @@
 
 {% block title %}Menú - MenuMastery{% endblock %}
 
-
-
-
 {% block content %}
 <section class="menu-section">
     <div class="container-fluid px-0"> <!-- Contenedor fluido sin padding horizontal -->
@@ -13,7 +10,7 @@
             <!-- Sidebar (usando tus estilos originales + Bootstrap) -->
             <aside class="col-lg-2 menu-sidebar">
                 <div class="menu-logo">
-                    <img src="{{ url_for('static', filename='imagenes/cutlery-1_icon-icons.com_62936.png') }}" alt="Logo Menú" class="img-fluid">
+                    <img src="{{ url_for('static', filename='/img/cutlery-1_icon-icons.com_62936.png') }}" alt="Logo Menú" class="img-fluid">
                 </div> 
                 <div class="menu-label">MENÚ</div>
     
@@ -23,7 +20,7 @@
                 </div>
 
                 <div class="menu-chef">
-                    <img src="{{ url_for('static', filename='imagenes/chef_87588.png') }}" alt="logo del chef" class="img-fluid">
+                    <img src="{{ url_for('static', filename='/img/chef_87588.png') }}" alt="logo del chef" class="img-fluid">
                 </div>
             </aside>
         
@@ -37,6 +34,22 @@
                         <option value="cat-{{ categoria.id }}">{{ categoria.nombre }}</option>
                         {% endfor %}
                     </select>
+                </div>
+                
+                <!-- Filtros de categoría para desktop -->
+                <div class="category-filters px-3 py-3 d-none d-lg-block">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-primary category-link active" 
+                                data-category="all">
+                            Todos los platos
+                        </button>
+                        {% for categoria in menu %}
+                        <button class="btn btn-outline-primary category-link" 
+                                data-category="cat-{{ categoria.id }}">
+                            {{ categoria.nombre }}
+                        </button>
+                        {% endfor %}
+                    </div>
                 </div>
                 
                 <!-- Listado de platos -->

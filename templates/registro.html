@@ -27,49 +27,45 @@
                 
                 <div class="card-body pt-1">
                     <form id="registration-form" method="POST" action="{{ url_for('registro') }}">
+                        {{ form.hidden_tag()}}
+                        
                         <!-- Nombre -->
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="nombre" name="nombre" 
-                                   placeholder="Nombre completo" required>
-                            <label for="nombre">Nombre completo</label>
+                            {{ form.nombre(class="form-control", placeholder="Nombre completo") }}
+                            {{ form.nombre.label }}
                         </div>
-                        
+    
                         <!-- Email -->
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control" id="email" name="email" 
-                                   placeholder="nombre@ejemplo.com" required>
-                            <label for="email">Correo electrónico</label>
+                            {{ form.email(class="form-control", placeholder="nombre@ejemplo.com") }}
+                            {{ form.email.label }}
                         </div>
-                        
-                        <!-- Confirmar Email -->
+
+                        <!-- confirmar Email -->
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control" id="confirm_email" name="confirm_email" 
-                                   placeholder="Confirmar correo electrónico" required>
-                            <label for="confirm_email">Confirmar correo electrónico</label>
-                            <div class="invalid-feedback" id="email-error">Los correos no coinciden</div>
+                            {{ form.confirm_email(class="form-control", placeholder="confirmar correo electronico")}}
+                            {{ form.confirm_email.label}}
                         </div>
                         
                         <!-- Contraseña -->
                         <div class="form-floating mb-3 position-relative">
-                            <input type="password" class="form-control" id="password" name="password" 
-                                   placeholder="Contraseña" required minlength="8">
-                            <label for="password">Contraseña</label>
+                            {{form.password(class="form-control", placeholder="contraseña", minlength=8)}}
+                            {{form.password.label}}
                             <small class="form-text text-muted">Mínimo 8 caracteres</small>
                             <i class="fas fa-eye position-absolute end-0 top-50 translate-middle-y me-3" 
-                               style="cursor: pointer;" id="toggle-password"></i>
+                            style="cursor: pointer;" id="toggle-password"></i>
                         </div>
                         
                         <!-- Confirmar Contraseña -->
                         <div class="form-floating mb-4">
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
-                                   placeholder="Confirmar contraseña" required>
-                            <label for="confirm_password">Confirmar contraseña</label>
+                            {{ form.confirm_password(class="form-control", placeholder="confirmar contraseña")}}
+                            {{ form.confirm_password.label}}
                             <div class="invalid-feedback" id="password-error">Las contraseñas no coinciden</div>
                         </div>
                         
                         <!-- Términos y condiciones -->
                         <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                            {{ form.terms(class="form-check-input") }}
                             <label class="form-check-label" for="terms">
                                 Acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Términos y Condiciones</a>
                             </label>
@@ -77,9 +73,7 @@
                         
                         <!-- Botón de registro -->
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-user-plus me-2"></i>Registrarse
-                            </button>
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
                         </div>
                     </form>
                 </div>

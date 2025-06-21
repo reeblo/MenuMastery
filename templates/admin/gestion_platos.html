@@ -46,7 +46,7 @@
                         <a href="{{ url_for('editar_plato', id=plato.id) }}" class="btn btn-sm btn-warning">
                             <i class="fas fa-edit"></i> Editar
                         </a>
-                        <form method="POST" action="{{ url_for('eliminar_producto', id=plato.id) }}" class="d-inline">
+                        <form method="POST" action="{{ url_for('eliminar_plato', id=plato.id) }}" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger" 
                                     onclick="return confirm('¿Eliminar este plato permanentemente?')">

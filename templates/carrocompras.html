@@ -1,229 +1,196 @@
 {% extends 'base.html' %}
 
 {% block title %}Carrito de Compras - MenuMastery{% endblock %}
-
 {% block content %}
-<section class="cart-section py-5">
-    <div class="container">
-        <div class="row">
-            <!-- Resumen del pedido actual -->
-            <div class="col-lg-8 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h2 class="h4 mb-0">
-                            <i class="fas fa-shopping-cart me-2"></i>Tu Pedido Actual
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <div id="cart-items">
-                            {% if cart_items %}
-                                {% for item in cart_items %}
-                                <div class="cart-item border-bottom pb-3 mb-3">
-                                    <div class="row align-items-center">
-                                        <div class="col-2">
-                                            <img src="{{ url_for('static', filename='img/platos/' + item.plato.imagen) }}" 
-                                                alt="{{ item.plato.nombre }}" class="img-fluid rounded">
-                                        </div>
-                                        <div class="col-5">
-                                            <h5 class="mb-1">{{ item.plato.nombre }}</h5>
-                                            <p class="text-muted small mb-0">{{ item.plato.descripcion }}</p>
-                                        </div>
-                                        <div class="col-3">
-s                                            <div class="input-group">
-                                                <button class="btn btn-outline-secondary minus-btn" type="button" data-id="{{ item.id }}">
-                                                    <i class="fas fa-minus"></i>
-                                                </button>
-                                                <input type="number" class="form-control text-center quantity" 
-                                                    value="{{ item.cantidad }}" min="1" data-id="{{ item.id }}">
-                                                <button class="btn btn-outline-secondary plus-btn" type="button" data-id="{{ item.id }}">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="col-2 text-end">
-                                            <span class="price">${{ "{:,.0f}".format(item.plato.precio) }}</span>
-                                            <button class="btn btn-link text-danger remove-item" data-id="{{ item.id }}">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Tu carrito está vacío</p>
-                                    <a href="{{ url_for('menu') }}" class="btn btn-primary">Ver Menú</a>
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        {% if cart_items %}
-                        <div class="text-end mt-3">
-                            <button class="btn btn-outline-danger" id="clear-cart">
-                                <i class="fas fa-trash me-1"></i> Vaciar Carrito
-                            </button>
-                        </div>
-                        {% endif %}
-                    </div>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Tu Carrito
+                        <span class="badge bg-primary float-end">{{ cart_items|length }} items</span>
+                    </h3>
                 </div>
                 
-                <!-- Historial de compras -->
-                <div class="card border-0 shadow-sm mt-4">
-                    <div class="card-header bg-white">
-                        <h2 class="h4 mb-0">
-                            <i class="fas fa-history me-2"></i>Tu Historial de Compras
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        {% if pedidos %}
-                            {% for pedido in pedidos %}
-                            <div class="order-history-item border-bottom pb-3 mb-3">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h5 class="mb-1">Pedido #{{ pedido.id }}</h5>
-                                        <p class="text-muted small mb-0">
-                                            {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }} - 
-                                            {{ pedido.items|length }} producto(s)
-                                        </p>
-                                        <div class="mt-2">
-                                            {% for item in pedido.items %}
-                                            <span class="badge bg-light text-dark me-1 mb-1">
-                                                {{ item.plato.nombre }} x{{ item.cantidad }}
-                                            </span>
-                                            {% endfor %}
+                <div class="card-body">
+                    {% if cart_items %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead> 
+                                <tr>
+                                    <th>Plato</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Precio Unitario</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cart_items %}
+                                <tr class="align-middle">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.plato.imagen %}
+                                            <img src="{{ url_for('static', filename='img/platos/' + item.plato.imagen) }}" 
+                                                 class="img-thumbnail me-3" width="80" alt="{{ item.plato.nombre }}">
+                                            {% else %}
+                                            <div class="img-thumbnail me-3 d-flex align-items-center justify-content-center" 
+                                                 style="width:80px; height:80px; background:#f8f9fa;">
+                                                <i class="fas fa-utensils fa-2x text-muted"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-1">{{ item.plato.nombre }}</h6>
+                                                <small class="text-muted">{{ item.plato.categoria.nombre }}</small>
+                                                {% if item.plato.descripcion %}
+                                                <p class="text-muted mb-0 small">{{ item.plato.descripcion|truncate(100) }}</p>
+                                                {% endif %}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <p class="mb-1 fw-bold">${{ "{:,.0f}".format(pedido.total) }}</p>
-                                        <span class="badge 
-                                            {% if pedido.estado == 'completado' %}bg-success
-                                            {% elif pedido.estado == 'pendiente' %}bg-warning text-dark
-                                            {% else %}bg-secondary{% endif %}">
-                                            {{ pedido.estado|capitalize }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <a href="{{ url_for('historial_compras') }}?pedido_id={{ pedido.id }}" class="btn btn-sm btn-outline-primary">
-                                        Ver detalles
-                                    </a>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-3">
-                                <i class="fas fa-shopping-bag fa-2x text-muted mb-3"></i>
-                                <p class="text-muted">Aún no tienes pedidos registrados</p>
-                            </div>
-                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm mx-auto" style="width:120px;">
+                                            <button class="btn btn-outline-secondary minus-btn" 
+                                                    data-item-id="{{ item.id }}" type="button">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center quantity-input" 
+                                                   value="{{ item.cantidad }}" min="1" data-item-id="{{ item.id }}">
+                                            <button class="btn btn-outline-secondary plus-btn" 
+                                                    data-item-id="{{ item.id }}" type="button">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">${{ "%.2f"|format(item.plato.precio) }}</td>
+                                    <td class="text-end">${{ "%.2f"|format(item.plato.precio * item.cantidad) }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-danger remove-item" 
+                                                data-item-id="{{ item.id }}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                        <h3>Tu carrito está vacío</h3>
+                        <p class="text-muted mb-4">Agrega platos deliciosos a tu carrito</p>
+                        <a href="{{ url_for('menu') }}" class="btn btn-primary">
+                            <i class="fas fa-utensils me-2"></i>Explorar Menú
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
-            
-            <!-- Resumen de pago y productos sugeridos -->
-            <div class="col-lg-4">
+                
                 {% if cart_items %}
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white">
-                        <h2 class="h4 mb-0">
-                            <i class="fas fa-receipt me-2"></i>Resumen
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal:</span>
-                            <span id="subtotal">${{ "{:,.0f}".format(subtotal) }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Envío:</span>
-                            <span id="shipping">$2.000</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold fs-5">
-                            <span>Total:</span>
-                            <span id="total">${{ "{:,.0f}".format(total) }}</span>
-                        </div>
-                        
-                        <div class="d-grid gap-2 mt-4">
-                            <button class="btn btn-primary btn-lg" id="checkout-btn">
-                                <i class="fas fa-credit-card me-2"></i> Pagar en Línea
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('menu') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-chevron-left me-2"></i>Seguir Comprando
+                        </a>
+                        <form method="POST" action="{{ url_for('vaciar_carrito') }}" class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger" 
+                                    onclick="return confirm('¿Estás seguro de vaciar todo el carrito?')">
+                                <i class="fas fa-trash-alt me-2"></i>Vaciar Carrito
                             </button>
-                            <button class="btn btn-outline-primary btn-lg" id="cash-btn">
-                                <i class="fas fa-money-bill-wave me-2"></i> Pagar en Efectivo
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
                 {% endif %}
-                
-                <!-- Productos sugeridos -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h2 class="h4 mb-0">
-                            <i class="fas fa-lightbulb me-2"></i>¿Te gustaría añadir?
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        {% for plato in platos_sugeridos %}
-                        <div class="suggested-product mb-3">
-                            <div class="row align-items-center">
-                                <div class="col-4">
-                                    <img src="{{ url_for('static', filename='img/platos/' + plato.imagen) }}" 
-                                        alt="{{ plato.nombre }}" class="img-fluid rounded">
-                                </div>
-                                <div class="col-5">
-                                    <h6 class="mb-1">{{ plato.nombre }}</h6>
-                                    <p class="text-muted small mb-0">${{ "{:,.0f}".format(plato.precio) }}</p>
-                                </div>
-                                <div class="col-3 text-end">
-                                    <button class="btn btn-sm btn-outline-success add-suggested" 
-                                            data-id="{{ plato.id }}" 
-                                            data-name="{{ plato.nombre }}" 
-                                            data-price="{{ plato.precio }}">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
+            </div>
+        </div>
+        
+        {% if cart_items %}
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>Resumen del Pedido
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Subtotal:</span>
+                            <span>${{ "%.2f"|format(subtotal) }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Costo de Envío:</span>
+                            <span>${{ "%.2f"|format(envio) }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between fw-bold fs-5">
+                            <span>Total:</span>
+                            <span>${{ "%.2f"|format(total) }}</span>
+                        </li>
+                    </ul>
+                    
+                    <form method="POST" action="{{ url_for('carrito') }}">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Método de Pago</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_type" 
+                                       id="efectivo" value="efectivo" checked>
+                                <label class="form-check-label" for="efectivo">
+                                    <i class="fas fa-money-bill-wave me-2"></i>Efectivo al entregar
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_type" 
+                                       id="tarjeta" value="online">
+                                <label class="form-check-label" for="tarjeta">
+                                    <i class="fas fa-credit-card me-2"></i>Pago con tarjeta
+                                </label>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
+                        
+                        <div class="mb-3">
+                            <label for="comentarios" class="form-label fw-bold">
+                                <i class="fas fa-notes-medical me-2"></i>Instrucciones especiales
+                            </label>
+                            <textarea class="form-control" id="comentarios" name="comentarios" 
+                                      rows="3" placeholder="Alergias, preferencias, instrucciones de entrega..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-check-circle me-2"></i>Confirmar Pedido
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
-</section>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Actualizar cantidades
-    document.querySelectorAll('.quantity').forEach(input => {
+    // Actualizar cantidad
+    document.querySelectorAll('.quantity-input').forEach(input => {
         input.addEventListener('change', function() {
-            const itemId = this.getAttribute('data-id');
-            const newQuantity = parseInt(this.value);
+            const itemId = this.getAttribute('data-item-id');
+            const newQuantity = this.value;
             
-            fetch(`/api/carrito/actualizar/${itemId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ cantidad: newQuantity })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    updateCartTotals(data.subtotal, data.total);
-                }
-            });
+            if(newQuantity < 1) {
+                this.value = 1;
+                return;
+            }
+            
+            updateCartItem(itemId, newQuantity);
         });
     });
     
     // Botones de incremento/decremento
     document.querySelectorAll('.plus-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const input = this.parentNode.querySelector('.quantity');
+            const input = this.parentNode.querySelector('.quantity-input');
             input.value = parseInt(input.value) + 1;
             input.dispatchEvent(new Event('change'));
         });
@@ -231,101 +198,124 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.querySelectorAll('.minus-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const input = this.parentNode.querySelector('.quantity');
-            if (parseInt(input.value) > 1) {
+            const input = this.parentNode.querySelector('.quantity-input');
+            if(parseInt(input.value) > 1) {
                 input.value = parseInt(input.value) - 1;
                 input.dispatchEvent(new Event('change'));
             }
         });
     });
     
-    // Eliminar items
+    // Eliminar ítem
     document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', function() {
-            const itemId = this.getAttribute('data-id');
-            
-            fetch(`/api/carrito/eliminar/${itemId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    this.closest('.cart-item').remove();
-                    updateCartTotals(data.subtotal, data.total);
-                    
-                    if(data.items_count === 0) {
-                        location.reload(); // Recargar para mostrar carrito vacío
-                    }
-                }
-            });
+            if(confirm('¿Eliminar este ítem de tu carrito?')) {
+                deleteCartItem(this.getAttribute('data-item-id'));
+            }
         });
     });
     
-    // Vaciar carrito
-    document.getElementById('clear-cart')?.addEventListener('click', function() {
-        fetch('/api/carrito/vaciar', {
-            method: 'DELETE'
+    // Funciones AJAX
+    function updateCartItem(itemId, quantity) {
+        fetch(`/carrito/actualizar/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ cantidad: quantity })
         })
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                location.reload(); // Recargar la página
-            }
-        });
-    });
-    
-    // Añadir productos sugeridos
-    document.querySelectorAll('.add-suggested').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const platoId = this.getAttribute('data-id');
-            
-            fetch('/api/carrito/agregar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    plato_id: platoId,
-                    cantidad: 1 
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.success) {
-                    location.reload(); // Recargar para mostrar el nuevo item
-                }
-            });
-        });
-    });
-    
-    // Procesar pago
-    document.getElementById('checkout-btn')?.addEventListener('click', function() {
-        processPayment('online');
-    });
-    
-    document.getElementById('cash-btn')?.addEventListener('click', function() {
-        processPayment('cash');
-    });
-    
-    function processPayment(paymentType) {
-        fetch('/carrito', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `payment_type=${paymentType}`
-        })
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
+                window.location.reload();
+            } else {
+                alert('Error al actualizar: ' + (data.error || 'Intenta nuevamente'));
             }
         });
     }
     
-    function updateCartTotals(subtotal, total) {
-        document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString('es-CL');
-        document.getElementById('total').textContent = '$' + total.toLocaleString('es-CL');
+    function deleteCartItem(itemId) {
+        fetch(`/carrito/eliminar/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                window.location.reload();
+            } else {
+                alert('Error al eliminar: ' + (data.error || 'Intenta nuevamente'));
+            }
+        });
     }
 });
 </script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    padding: 1rem 1.5rem;
+}
+
+.quantity-input {
+    max-width: 50px;
+    text-align: center;
+}
+
+.input-group {
+    width: fit-content;
+}
+
+.btn-outline-primary {
+    border-width: 2px;
+}
+
+.btn-primary {
+    background-color: #2c3e50;
+    border-color: #2c3e50;
+}
+
+.btn-primary:hover {
+    background-color: #1a252f;
+    border-color: #1a252f;
+}
+
+.img-thumbnail {
+    padding: 0.25rem;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.list-group-item {
+    padding: 0.75rem 1.25rem;
+    border-color: rgba(0,0,0,.05);
+}
+
+@media (max-width: 992px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .input-group {
+        width: 100%;
+    }
+}
+</style>
 {% endblock %}
