@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="content-container">
+  <div class="card">
+    <div class="card-header">
+      <h2>Configuración del Administrador</h2>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        <div class="mb-3">
+          <label for="siteName" class="form-label">Nombre del sitio</label>
+          <input type="text" class="form-control" id="siteName" name="siteName" value="{{ config.site_name }}">
+        </div>
+        <div class="mb-3">
+          <label for="adminEmail" class="form-label">Correo del administrador</label>
+          <input type="email" class="form-control" id="adminEmail" name="adminEmail" value="{{ config.admin_email }}">
+        </div>
+        <div class="mb-3">
+          <label for="themeColor" class="form-label">Color principal</label>
+          <input type="color" class="form-control form-control-color" id="themeColor" name="themeColor" value="{{ config.theme_color }}">
+        </div>
+        <div class="mb-3">
+          <label for="maintenanceMode" class="form-label">Modo mantenimiento</label>
+          <select class="form-select" id="maintenanceMode" name="maintenanceMode">
+            <option value="off" {% if not config.maintenance_mode %}selected{% endif %}>Desactivado</option>
+            <option value="on" {% if config.maintenance_mode %}selected{% endif %}>Activado</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

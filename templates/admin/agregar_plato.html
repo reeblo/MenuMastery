@@ -29,16 +29,15 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <!-- Imagen -->
-                        <div class="mb-3">
-                            <label for="imagen" class="form-label fw-bold">Imagen del Plato</label>
-                            <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*" required>
-                            <div class="mt-2">
-                                <img id="imagen-preview" src="#" alt="Vista previa de la imagen" 
-                                    class="img-thumbnail d-none" style="max-height: 150px;">
-                            </div>
-                            <small class="text-muted">Formatos: JPG, PNG, JPEG (Máx. 2MB)</small>
+                    <!-- Campo de imagen actualizado -->
+                    <div class="mb-3">
+                        <label for="imagen" class="form-label fw-bold">Imagen del Plato</label>
+                        <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*" required>
+                        <div class="mt-2">
+                            <img id="imagen-preview" src="#" alt="Vista previa de la imagen" 
+                                class="img-thumbnail d-none" style="max-height: 150px;">
                         </div>
+                        <small class="text-muted">Formatos: JPG, PNG, JPEG (Máx. 2MB)</small>
                     </div>
                 </div>
                 
@@ -125,6 +124,6 @@
         }
     });
 </script>
-{% endblock %}
 
+{% endblock %}
 {% endblock %}

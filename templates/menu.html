@@ -61,6 +61,12 @@
                         data-destacado="{{ 'true' if plato.destacado else 'false' }}">
                         
                         <div class="dish-card h-100">
+                            {% if plato.agotado %}
+                            <div class="agotado-overlay">
+                                <span>AGOTADO</span>
+                            </div>
+                            {% endif %}
+
                             {% if plato.destacado %}
                             <div class="highlight-badge">¡Destacado!</div>
                             {% endif %}
@@ -90,12 +96,18 @@
                             </div>
                             
                             <div class="card-footer bg-white border-top-0">
-                                <button class="btn btn-primary w-100 add-to-cart" 
-                                        data-plato-id="{{ plato.id }}"
-                                        data-plato-nombre="{{ plato.nombre }}"
-                                        data-plato-precio="{{ plato.precio }}">
-                                    <i class="fas fa-plus me-2"></i> Añadir al pedido
+                                {% if plato.agotado %}
+                                <button class="btn btn-secondary w-100" disabled>
+                                    <i class="fas fa-times me-2"></i> No disponible
                                 </button>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('agregar_al_carrito', plato_id=plato.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-primary w-100 add-to-cart">
+                                        <i class="fas fa-plus me-2"></i> Añadir al pedido
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -110,29 +122,26 @@
 
 {% block scripts %}
 <script>
-// Función para añadir al carrito (sin cambios)
-document.querySelectorAll('.add-to-cart').forEach(button => {
-    button.addEventListener('click', function() {
-        const platoId = this.getAttribute('data-plato-id');
-        const platoNombre = this.getAttribute('data-plato-nombre');
-        
-        // Feedback visual
-        const originalHTML = this.innerHTML;
-        this.innerHTML = '<i class="fas fa-check me-2"></i> Añadido';
-        this.classList.remove('btn-primary');
-        this.classList.add('btn-success');
-        
+// Función para mostrar notificación
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-body">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
         setTimeout(() => {
-            this.innerHTML = originalHTML;
-            this.classList.remove('btn-success');
-            this.classList.add('btn-primary');
-        }, 2000);
-        
-        // Notificación
-        showToast(`"${platoNombre}" añadido al carrito`);
-        addToCart(platoId);
-    });
-});
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }, 10);
+}
 
 // Filtrado por categorías (funcionalidad existente)
 document.querySelectorAll('.category-link').forEach(link => {
@@ -140,15 +149,12 @@ document.querySelectorAll('.category-link').forEach(link => {
         e.preventDefault();
         const category = this.getAttribute('data-category');
         
-        // Remover activo de todos los links
         document.querySelectorAll('.category-link').forEach(item => {
             item.classList.remove('active');
         });
         
-        // Agregar activo al clickeado
         this.classList.add('active');
         
-        // Filtrar platos
         document.querySelectorAll('.plato-item').forEach(item => {
             if (category === 'all' || item.getAttribute('data-category') === category) {
                 item.style.display = 'block';
@@ -171,35 +177,113 @@ document.getElementById('mobile-category-filter').addEventListener('change', fun
     });
 });
 
-// Funciones auxiliares (sin cambios)
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.right = '20px';
-    toast.style.padding = '10px 15px';
-    toast.style.background = '#28a745';
-    toast.style.color = 'white';
-    toast.style.borderRadius = '5px';
-    toast.style.zIndex = '1000';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.remove(), 3000);
-}
-
-function addToCart(platoId) {
-    fetch('/agregar-carrito', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plato_id: platoId, cantidad: 1 })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.success && document.getElementById('cart-count')) {
-            document.getElementById('cart-count').textContent = data.cart_count;
+// Manejo del formulario para agregar al carrito
+document.querySelectorAll('form[action*="agregar-al-carrito"]').forEach(form => {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Agregando...';
+            
+            try {
+                const formData = new FormData(this);
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Error al agregar al carrito');
+                }
+                
+                showToast(data.message, 'success');
+                
+                // Actualizar contador del carrito
+                const cartCountBadge = document.querySelector('.cart-count');
+                if (cartCountBadge) {
+                    cartCountBadge.textContent = data.cart_count;
+                    cartCountBadge.classList.toggle('d-none', data.cart_count <= 0);
+                }
+                
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         }
     });
-}
+});
 </script>
+
+<style>
+/* Estilos optimizados para las notificaciones */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: #28a745;
+    color: white;
+    border-radius: 8px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    max-width: 320px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    transform: translateY(20px);
+    display: flex;
+    align-items: center;
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-error {
+    background: #dc3545;
+}
+
+.toast-success {
+    background: #28a745;
+}
+
+.toast-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.toast-body {
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.toast-notification i {
+    margin-right: 10px;
+    font-size: 1.2rem;
+}
+
+/* Animación de sacudida para el botón */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+.add-to-cart.added {
+    animation: shake 0.5s ease;
+    background-color: #198754 !important;
+}
+</style>
 {% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Ajustar Inventario: {{ plato.nombre }}</h2>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Stock actual</label>
+                        <input type="text" class="form-control" value="{{ plato.stock }}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Stock mínimo</label>
+                        <input type="text" class="form-control" value="{{ plato.stock_minimo }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="tipo_operacion" class="form-label">Tipo de operación</label>
+                    <select class="form-select" id="tipo_operacion" name="tipo_operacion" required>
+                        <option value="entrada">Entrada (Añadir stock)</option>
+                        <option value="salida">Salida (Reducir stock)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="cantidad" class="form-label">Cantidad</label>
+                    <input type="number" class="form-control" id="cantidad" name="cantidad" min="1" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="motivo" class="form-label">Motivo (opcional)</label>
+                    <textarea class="form-control" id="motivo" name="motivo" rows="2"></textarea>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('gestion_inventario') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

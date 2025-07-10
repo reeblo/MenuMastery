@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MenuMastery - {% block title %}Área de Empleados{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/empleado.css') }}">
+</head>
+<body class="empleado {{ 'cocinero' if current_user.tipo_empleado == 'cocinero' else 'mesero' }}">
+    <div class="empleado-layout">
+        <!-- Barra superior -->
+        <header class="empleado-header">
+            <div class="header-content">
+                <button class="menu-toggle d-lg-none">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>
+                    <i class="fas {{ 'fa-utensils' if current_user.tipo_empleado == 'cocinero' else 'fa-concierge-bell' }}"></i>
+                    Área de {{ 'Cocina' if current_user.tipo_empleado == 'cocinero' else 'Meseros' }}
+                </h1>
+                <div class="header-actions">
+                    {% if current_user.tipo_empleado == 'mesero' %}
+                    <!-- Notificaciones solo para meseros -->
+                    <div class="dropdown notification-dropdown">
+                        <button class="btn btn-notification" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            <span id="noti_badge" class="notification-badge" style="display:none;">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                            <li><h6 class="dropdown-header">Notificaciones recientes</h6></li>
+                            {% for notificacion in notificaciones_recientes %}
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <small class="text-muted">{{ notificacion.fecha.strftime('%H:%M') }}</small><br>
+                                    {{ notificacion.mensaje }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li><a class="dropdown-item" href="#">No hay notificaciones nuevas</a></li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">Ver todas</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <span class="user-info">Bienvenido, {{ current_user.nombre }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-sign-out-alt"></i> Salir
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Barra lateral dinámica -->
+        <aside class="empleado-sidebar">
+            <ul class="sidebar-menu">
+                <li class="{% if request.endpoint == 'empleado_pedidos' %}active{% endif %}">
+                    <a href="{{ url_for('empleado_pedidos') }}">
+                        <i class="fas fa-clipboard-list me-2"></i> 
+                        {{ 'Pedidos Pendientes' if current_user.tipo_empleado == 'cocinero' else 'Pedidos Listos' }}
+                    </a>
+                </li>
+                
+                {% if current_user.tipo_empleado == 'cocinero' %}
+                <li class="{% if request.endpoint == 'control_disponibilidad' %}active{% endif %}">
+                    <a href="{{ url_for('control_disponibilidad') }}">
+                        <i class="fas fa-box-open me-2"></i> Control Disponibilidad
+                    </a>
+                </li>
+                {% else %}
+                <li class="{% if request.endpoint == 'empleado_reservas' %}active{% endif %}">
+                    <a href="{{ url_for('empleado_reservas') }}">
+                        <i class="fas fa-calendar-day me-2"></i> Reservas
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'verificar_reserva' %}active{% endif %}">
+                    <a href="{{ url_for('verificar_reserva') }}">
+                        <i class="fas fa-search me-2"></i> Verificar Reserva
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="empleado-content">
+            <!-- Mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/empleado.js') }}"></script>
+    
+</body>
+</html>

@@ -1,0 +1,362 @@
+/* Variables CSS - Manteniendo coherencia con admin */
+:root {
+  --sidebar-width: 280px;
+  --sidebar-bg: #2c3e50;
+  --sidebar-color: #ecf0f1;
+  --topbar-bg: #ffffff;
+  --topbar-height: 70px;
+  --content-bg: #f5f7fa;
+  --primary-color: #3498db;
+  --hover-color: #2980b9;
+  --active-color: #1abc9c;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --danger-color: #e74c3c;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+  --info-color: #3498db;
+}
+
+/* Estructura Base - Similar a admin pero con ajustes */
+.empleado-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 100vh;
+  background-color: var(--content-bg);
+}
+
+/* Header - Manteniendo estilo pero con detalles de empleado */
+.empleado-header {
+  grid-column: 2;
+  background-color: var(--topbar-bg);
+  height: var(--topbar-height);
+  padding: 0 25px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.empleado-header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--sidebar-bg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.empleado-header h1 i {
+  font-size: 1.3rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-info {
+  font-weight: 500;
+  color: var(--sidebar-bg);
+}
+
+/* Sidebar - Similar a admin pero con colores contextuales */
+.empleado-sidebar {
+  grid-row: 1 / span 2;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-color);
+  position: fixed;
+  height: 100vh;
+  width: var(--sidebar-width);
+  transition: all 0.3s;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 20px 0;
+  margin: 0;
+}
+
+.sidebar-menu li {
+  margin: 5px 15px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.sidebar-menu li a {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.3s;
+  font-size: 0.95rem;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-menu li a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sidebar-menu li a i {
+  margin-right: 10px;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-menu li.active a {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--active-color);
+  color: white;
+}
+
+/* Contenido Principal - Coherente con admin */
+.empleado-content {
+  grid-column: 2;
+  padding: 25px;
+  min-height: calc(100vh - var(--topbar-height));
+}
+
+/* Cards - Estilo consistente */
+.card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  border: none;
+}
+
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid #eee;
+  padding: 15px 20px;
+  font-weight: 600;
+  border-radius: 8px 8px 0 0 !important;
+  display: flex;
+  align-items: center;
+}
+
+.card-header i {
+  margin-right: 10px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* Badges - Estilo consistente */
+.badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-primary {
+  background-color: var(--primary-color);
+}
+
+.badge-success {
+  background-color: var(--success-color);
+}
+
+.badge-danger {
+  background-color: var(--danger-color);
+}
+
+.badge-warning {
+  background-color: var(--warning-color);
+}
+
+/* Tablas - Similar a admin */
+.table {
+  width: 100%;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #eee;
+  padding: 15px;
+  text-align: left;
+}
+
+.table tbody td {
+  padding: 12px 15px;
+  border-top: 1px solid #eee;
+}
+
+.table tbody tr:hover td {
+  background-color: #f8f9fa;
+}
+
+/* Estilos específicos para pedidos */
+.pedidos-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.pedido-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.pedido-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.pedido-title {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--sidebar-bg);
+}
+
+.pedido-time {
+  color: var(--gray-dark);
+  font-size: 0.9rem;
+}
+
+.pedido-items {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0;
+}
+
+.pedido-items li {
+  padding: 8px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.pedido-items li:last-child {
+  border-bottom: none;
+}
+
+/* Notificaciones */
+.notification-dropdown {
+  position: relative;
+}
+
+.btn-notification {
+  position: relative;
+  background: none;
+  border: none;
+  color: var(--sidebar-bg);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: var(--danger-color);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+/* Estilos contextuales para roles */
+.empleado.cocinero .sidebar-menu li.active a {
+  border-left-color: var(--danger-color);
+}
+
+.empleado.mesero .sidebar-menu li.active a {
+  border-left-color: var(--primary-color);
+}
+
+/* Responsive - Similar a admin */
+@media (max-width: 992px) {
+  .empleado-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .empleado-sidebar {
+    position: fixed;
+    left: -100%;
+    z-index: 1000;
+    width: 280px;
+    height: 100vh;
+    transition: left 0.3s;
+  }
+  
+  .empleado-sidebar.active {
+    left: 0;
+  }
+  
+  .empleado-header,
+  .empleado-content {
+    grid-column: 1;
+  }
+  
+  .menu-toggle {
+    display: block !important;
+    background: none;
+    border: none;
+    color: var(--sidebar-bg);
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+}
+
+/* Estilos para la tabla de disponibilidad */
+.table-danger td {
+    background-color: #fff5f5;
+}
+
+.table-danger:hover td {
+    background-color: #ffecec;
+}
+
+/* Botones de acción */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Badges de estado */
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+    font-weight: 500;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pedido-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Toast notifications - Similar a flash messages */
+.toast {
+  animation: fadeIn 0.3s ease-out;
+}

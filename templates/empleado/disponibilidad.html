@@ -1,0 +1,98 @@
+{% extends "empleado/base.html" %}
+
+{% block title %}Control de Disponibilidad{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Control de Disponibilidad</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('control_disponibilidad') }}" class="btn btn-sm btn-outline-secondary {% if not request.args.get('filtro') %}active{% endif %}">
+                Todos los platos
+            </a>
+            <a href="{{ url_for('control_disponibilidad') }}?filtro=agotados" class="btn btn-sm btn-outline-danger {% if request.args.get('filtro') == 'agotados' %}active{% endif %}">
+                Solo agotados
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-utensils me-2"></i> Lista de Platos</span>
+                    <span class="badge bg-danger">{{ platos_agotados_count }} agotados</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Plato</th>
+                                    <th>Categoría</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for plato in platos %}
+                                <tr class="{% if plato.agotado %}table-danger{% endif %}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ url_for('static', filename='img/platos/' + (plato.imagen or 'default-dish.jpg')) }}" 
+                                                class="rounded me-3" width="50" height="50" alt="{{ plato.nombre }}">
+                                            <div>
+                                                <h6 class="mb-0">{{ plato.nombre }}</h6>
+                                                <small class="text-muted">{{ plato.descripcion|truncate(50) if plato.descripcion else 'Sin descripción' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ plato.categoria.nombre }}</td>
+                                    <td>${{ "%.2f"|format(plato.precio) }}</td>
+                                    <td>
+                                        {% if plato.agotado %}
+                                        <span class="badge bg-danger">Agotado</span>
+                                        {% else %}
+                                        <span class="badge bg-success">Disponible</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('cambiar_estado_plato', id=plato.id) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="estado" value="{{ 'disponible' if plato.agotado else 'agotado' }}">
+                                            <button type="submit" class="btn btn-sm {{ 'btn-success' if plato.agotado else 'btn-warning' }}">
+                                                <i class="fas {{ 'fa-check' if plato.agotado else 'fa-times' }} me-1"></i>
+                                                {{ 'Disponible' if plato.agotado else 'Agotado' }}
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    Total: {{ platos|length }} platos | {{ platos_agotados_count }} agotados
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirmación antes de cambiar estado
+document.querySelectorAll('form[action*="cambiar_estado_plato"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const button = this.querySelector('button');
+        const nuevoEstado = this.querySelector('input[name="estado"]').value;
+        const platoNombre = this.closest('tr').querySelector('h6').textContent;
+        
+        if (!confirm(`¿Está seguro de marcar "${platoNombre}" como ${nuevoEstado}?`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

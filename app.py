@@ -20,6 +20,7 @@ import time
 from flask import jsonify
 from flask_login import logout_user
 from functools import wraps
+from decimal import Decimal, ROUND_HALF_UP
 
 from wtforms import (
     StringField,
@@ -58,8 +59,7 @@ class LoginForm(FlaskForm):
 
 class RolUsuario(Enum):
     ADMIN = 'admin'
-    COCINERO = 'cocinero'
-    MESERO = 'mesero'
+    EMPLEADO = 'empleado'
     CLIENTE = 'cliente'
 
 class Usuario(db.Model, UserMixin):
@@ -71,6 +71,7 @@ class Usuario(db.Model, UserMixin):
     rol = db.Column(db.String(20), default= RolUsuario.CLIENTE.value) 
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
     foto = db.Column(db.String(200), default='default.png')
+    tipo_empleado = db.Column(db.String(20))
 
 class RegistroForm(FlaskForm):
     nombre = StringField('Nombre completo', validators=[DataRequired()])
@@ -106,7 +107,28 @@ class ReservaForm(FlaskForm):
         ('19:00', '7:00 PM'),
         ('20:00', '8:00 PM')
     ], validators=[DataRequired()])
-    personas = IntegerField('Número de personas', validators=[DataRequired()])  
+    personas = SelectField('Número de personas', choices=[
+        (1, '1 persona'),
+        (2, '2 personas'),
+        (3, '3 personas'),
+        (4, '4 personas'),
+        (5, '5 personas'),
+        (6, '6 personas'),
+        (7, '7 personas'),
+        (8, '8 personas'),
+        (9, '9+ personas (reserva especial)')
+    ], validators=[DataRequired()])
+    mesa = SelectField('Mesa preferida', choices=[
+        ('', 'Sin preferencia'),
+        ('1', 'Mesa 1 - Ventana'),
+        ('2', 'Mesa 2 - Ventana'),
+        ('3', 'Mesa 3 - Centro'),
+        ('4', 'Mesa 4 - Centro'),
+        ('5', 'Mesa 5 - Terraza'),
+        ('6', 'Mesa 6 - Terraza'),
+        ('7', 'Mesa 7 - Privada'),
+        ('8', 'Mesa 8 - Privada')
+    ])
     comentarios = TextAreaField('Comentarios adicionales') 
     submit = SubmitField('Confirmar Reserva')
 
@@ -119,7 +141,8 @@ class PlatoForm(FlaskForm):
     nombre = StringField('Nombre', validators=[DataRequired()])
     descripcion = TextAreaField('Descripción')
     precio = IntegerField('Precio', validators=[DataRequired()])
-    imagen = StringField('Nombre de la imagen (ej: plato1.jpg)')
+    stock = IntegerField('Stock disponible', validators=[DataRequired()])
+    stock_minimo = IntegerField('Stock mínimo', validators=[DataRequired()])
     destacado = SelectField('Destacado', choices=[(False, 'No'), (True, 'Sí')], coerce=bool)
     categoria_id = SelectField('Categoría', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Guardar Plato')
@@ -129,19 +152,24 @@ class Plato(db.Model):
     nombre = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text)
     precio = db.Column(db.Float, nullable=False)
-    imagen = db.Column(db.String(255))  # Unificado en un solo campo
+    imagen = db.Column(db.String(255)) 
     destacado = db.Column(db.Boolean, default=False)
+    agotado = db.Column(db.Boolean, default=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
     categoria = db.relationship('Categoria', backref='platos') 
+    stock = db.Column(db.Integer, default=0)
+    stock_minimo = db.Column(db.Integer, default=5) 
+    fecha_actualizacion = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario = db.relationship('Usuario', backref='pedidos')
     mesa = db.Column(db.String(20)) 
     total = db.Column(db.Float, nullable=False)
     estado = db.Column(db.String(20), default='pendiente')
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
-    usuario = db.relationship('Usuario', backref='pedidos')
+    items = db.relationship('PedidoItem', backref='pedido', lazy=True)
 
 class PedidoItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -150,7 +178,7 @@ class PedidoItem(db.Model):
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
     plato = db.relationship('Plato')
-    pedido = db.relationship('Pedido', backref='items')
+    comentarios = db.Column(db.Text)
 
 class Reserva(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -159,6 +187,7 @@ class Reserva(db.Model):
     comentarios = db.Column(db.Text)
     estado = db.Column(db.String(20), default='pendiente')
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    mesa = db.Column(db.String(10))
     usuario = db.relationship('Usuario', backref='reservas')
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -177,13 +206,57 @@ class Resena(db.Model):
     aprobado = db.Column(db.Boolean, default=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Notificacion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mensaje = db.Column(db.String(255), nullable=False)
+    tipo_destino = db.Column(db.String(20), nullable=False)
+    visto = db.Column(db.Boolean, default=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedido.id'))  # opcional
+    pedido = db.relationship('Pedido', backref='notificaciones')
+    rol_destino = db.Column(db.String(50)) 
+
+class MovimientoInventario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    plato_id = db.Column(db.Integer, db.ForeignKey('plato.id'), nullable=False)
+    tipo = db.Column(db.String(10), nullable=False)  # 'entrada' o 'salida'
+    cantidad = db.Column(db.Integer, nullable=False)
+    stock_actual = db.Column(db.Integer, nullable=False)
+    motivo = db.Column(db.String(200))
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    
+    plato = db.relationship('Plato', backref='movimientos')
+    usuario = db.relationship('Usuario')
+
+class RegistroActividad(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
+    accion = db.Column(db.String(200))
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    ip = db.Column(db.String(50))
+
+
 # crear tablas si no existen
 with app.app_context():
     db.create_all()
 
+
+def redondear(valor):
+    return float(Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
 def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Decorador para verificar sesión de cliente
+def login_cliente_requerido(f):
+    @wraps(f)
+    def decorador(*args, **kwargs):
+        if 'cliente_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorador
 
 #crear usuario inicial.
 def crear_admin_inicial():
@@ -206,7 +279,8 @@ def crear_admin_inicial():
                 nombre='Chef Principal',
                 email='cocinero@menumastery.com',
                 password=generate_password_hash('Cocinero123'),
-                rol=RolUsuario.COCINERO.value
+                rol=RolUsuario.EMPLEADO.value,
+                tipo_empleado='cocinero'
             )
             db.session.add(cocinero)
         
@@ -216,9 +290,11 @@ def crear_admin_inicial():
                 nombre='Mesero',
                 email='mesero@menumastery.com',
                 password=generate_password_hash('Mesero123'),
-                rol=RolUsuario.MESERO.value
+                rol=RolUsuario.EMPLEADO.value,
+                tipo_empleado= 'mesero'
             )
             db.session.add(mesero)
+
         db.session.commit()
         print("Usuarios iniciales creados:")
         print("- Cocinero: cocinero@menumastery.com / Cocinero123")
@@ -256,30 +332,36 @@ def agregar_plato():
     
     if form.validate_on_submit():
         try:
-            # Validar que se haya subido unUPLOAD_FOLDER = os.path.join('static', 'img', 'platos')a imagen si es requerido
-            imagen = request.files.get('imagen')
-            if not imagen or imagen.filename == '':
-                flash('Debe seleccionar una imagen para el plato', 'danger')
+            # Verificar si se subió una imagen
+            if 'imagen' not in request.files:
+                flash('No se ha seleccionado ningún archivo de imagen', 'danger')
+                return redirect(url_for('agregar_plato'))
+            
+            imagen = request.files['imagen']
+            
+            if imagen.filename == '':
+                flash('No se ha seleccionado ningún archivo', 'danger')
                 return redirect(url_for('agregar_plato'))
             
             if not allowed_file(imagen.filename):
                 flash('Formato de imagen no permitido. Use: PNG, JPG, JPEG o GIF', 'danger')
                 return redirect(url_for('agregar_plato'))
             
-            # Procesar la imagen
             filename = secure_filename(imagen.filename)
-            try:
-                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            except OSError as e:
-                flash(f'Error al crear carpeta de imagenes: {str(e)}', 'danger')
-                return redirect(url_for('agregar_plato'))
-            
+
+            # Crear directorio si no existe
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+            # Guardar la imagen
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            imagen.save(filepath)
+
             # Crear el plato
             nuevo_plato = Plato(
                 nombre=form.nombre.data,
                 descripcion=form.descripcion.data,
                 precio=form.precio.data,
-                imagen=filename,
+                imagen=filename,  # Guardamos solo el nombre del archivo
                 destacado=form.destacado.data,
                 categoria_id=form.categoria_id.data
             )
@@ -383,16 +465,44 @@ def gestion_platos():
     platos = Plato.query.order_by(Plato.nombre).all()
     return render_template('admin/gestion_platos.html', platos=platos)
 
-# Funciones de ayuda
+# categoria de platos ADMINISTRACION.
 def agregar_datos_iniciales():
-    with app.app_context():  # ¡Contexto crítico aquí!
+    with app.app_context(): 
         if not Categoria.query.first():
             categorias = [
                 Categoria(nombre="Desayunos"),
                 Categoria(nombre="Almuerzos"),
-                # ... más datos
+                Categoria(nombre="Cenas"),
+                Categoria(nombre="Bebidas"),
+                Categoria(nombre="Comodas rapidas"),
             ]
             db.session.add_all(categorias)
+            db.session.commit()
+
+        # Agregar algunos platos con inventario inicial
+        if not Plato.query.first():
+            desayuno = Categoria.query.filter_by(nombre="Desayunos").first()
+            almuerzo = Categoria.query.filter_by(nombre="Almuerzos").first()
+            
+            platos = [
+                Plato(
+                    nombre="Huevos con tocino",
+                    descripcion="Huevos revueltos con tocino crocante",
+                    precio=12000,
+                    categoria_id=desayuno.id,
+                    stock=15,
+                    stock_minimo=5
+                ),
+                Plato(
+                    nombre="Pasta Alfredo",
+                    descripcion="Pasta con salsa alfredo y pollo",
+                    precio=18000,
+                    categoria_id=almuerzo.id,
+                    stock=8,
+                    stock_minimo=3
+                )
+            ]
+            db.session.add_all(platos)
             db.session.commit()
 
 # rol requerido
@@ -410,19 +520,210 @@ def rol_requerido(rol_necesario):
         return envoltura
     return decorador
 
-#modulo del cocinero
-@app.route('/cocinero/pedidos')
+#modificaciones como modo empleado.
+# Decorador para verificar tipo de empleado
+def tipo_empleado_requerido(*tipos_permitidos):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.rol != RolUsuario.EMPLEADO.value:
+                flash('Acceso no autorizado', 'danger')
+                return redirect(url_for('inicio'))
+            if current_user.tipo_empleado not in tipos_permitidos:
+                flash('No tienes permiso para acceder a esta sección', 'danger')
+                return redirect(url_for('empleado_dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# Dashboard principal de empleados
+# Módulo unificado de empleados
+@app.route('/empleado/dashboard')
 @login_required
-@rol_requerido(RolUsuario.COCINERO.value)
-def cocinero_pedidos():
-    pedidos = Pedido.query.filter_by(estado='pendiente').order_by(Pedido.fecha.asc()).all()
-    return render_template('cocinero/pedidos.html', pedidos=pedidos)
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def empleado_dashboard():
+    if current_user.rol != RolUsuario.EMPLEADO.value:
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    hoy = datetime.now().date()
+    
+    # Obtener notificaciones no vistas y recientes
+    notificaciones_no_vistas = Notificacion.query.filter_by(
+        tipo_destino=current_user.tipo_empleado,
+        visto=False
+    ).count()
+    
+    notificaciones_recientes = Notificacion.query.filter_by(
+        tipo_destino=current_user.tipo_empleado
+    ).order_by(Notificacion.fecha.desc()).limit(5).all()
+    
+    if current_user.tipo_empleado == 'cocinero':
+        pedidos_count = Pedido.query.filter_by(estado='pendiente').count()
+        platos_agotados_count = Plato.query.filter_by(agotado=True).count()
+        return render_template('empleado/dashboard.html',
+                            pedidos_pendientes_count=pedidos_count,
+                            platos_agotados_count=platos_agotados_count,
+                            notificaciones_no_vistas=notificaciones_no_vistas,
+                            notificaciones_recientes=notificaciones_recientes)
+    elif current_user.tipo_empleado == 'mesero':
+        pedidos_count = Pedido.query.filter_by(estado='listo').count()
+        reservas_count = Reserva.query.filter(
+            db.func.date(Reserva.fecha) == hoy,
+            Reserva.estado == 'confirmada'
+        ).count()
+        return render_template('empleado/dashboard.html',
+                            pedidos_listos_count=pedidos_count,
+                            reservas_hoy_count=reservas_count,
+                            notificaciones_no_vistas=notificaciones_no_vistas,
+                            notificaciones_recientes=notificaciones_recientes)
+    
+    flash('Tu cuenta de empleado no está configurada correctamente', 'warning')
+    return redirect(url_for('inicio'))
+
+# Módulo de pedidos unificado
+@app.route('/empleado/pedidos')
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def empleado_pedidos():
+    print("Tipo de empleado:", current_user.tipo_empleado)
+    if current_user.tipo_empleado == 'cocinero':
+        pedidos = Pedido.query.filter_by(estado='pendiente').order_by(Pedido.fecha.asc()).all()
+        plantilla = 'empleado/pedidos_cocina.html'
+    else:
+        pedidos = Pedido.query.filter_by(estado='listo').order_by(Pedido.fecha.asc()).all()
+        # Obtener notificaciones para meseros
+        notificaciones = Notificacion.query.filter_by(
+            rol_destino='MESERO',
+            visto=False
+        ).order_by(Notificacion.fecha.desc()).all()
+        # Marcar como vistas
+        for notificacion in notificaciones:
+            notificacion.visto = True
+        db.session.commit()
+        plantilla = 'empleado/pedidos_mesero.html'
+    
+    return render_template(plantilla, pedidos=pedidos)
+
+# Módulo de disponibilidad (solo cocineros)
+@app.route('/empleado/disponibilidad')
+@login_required
+@tipo_empleado_requerido('cocinero')
+def control_disponibilidad():
+    # Filtrar según parámetro de URL
+    filtro = request.args.get('filtro')
+    
+    if filtro == 'agotados':
+        platos = Plato.query.filter_by(agotado=True).order_by(Plato.nombre).all()
+    else:
+        platos = Plato.query.order_by(Plato.nombre).all()
+    
+    platos_agotados_count = Plato.query.filter_by(agotado=True).count()
+    
+    return render_template('empleado/disponibilidad.html', 
+                        platos=platos, 
+                        platos_agotados_count=platos_agotados_count,
+                        filtro_actual=filtro)
+
+# Módulo de reservas (solo meseros)
+@app.route('/empleado/reservas')
+@login_required
+@tipo_empleado_requerido('mesero')
+def empleado_reservas():
+    hoy = datetime.now().date()
+    
+    # Obtener reservas para hoy y futuras, ordenadas por fecha
+    reservas = Reserva.query.filter(
+        db.func.date(Reserva.fecha) >= hoy
+    ).order_by(
+        Reserva.fecha.asc(),
+        Reserva.estado.asc()
+    ).all()
+    
+    # Estadísticas para el dashboard
+    reservas_hoy = Reserva.query.filter(
+        db.func.date(Reserva.fecha) == hoy
+    ).count()
+    
+    reservas_confirmadas = Reserva.query.filter(
+        db.func.date(Reserva.fecha) == hoy,
+        Reserva.estado == 'confirmada'
+    ).count()
+    
+    return render_template(
+        'empleado/reservas.html',
+        reservas=reservas,
+        hoy=hoy,
+        reservas_hoy=reservas_hoy,
+        reservas_confirmadas=reservas_confirmadas
+    )
+
+@app.route('/reserva/<int:id>/marcar-como-completada', methods=['POST'])
+@login_required
+@tipo_empleado_requerido('mesero')
+def marcar_como_completada(id):
+    reserva = Reserva.query.get_or_404(id)
+    reserva.estado = 'completada'
+    db.session.commit()
+    
+    # Crear notificación
+    notificacion = Notificacion(
+        mensaje=f"Reserva #{reserva.id} completada - Mesa {reserva.mesa}",
+        tipo_destino='mesero',
+        visto=False,
+        fecha=datetime.utcnow()
+    )
+    db.session.add(notificacion)
+    db.session.commit()
+    
+    flash('Reserva marcada como completada', 'success')
+    return redirect(url_for('empleado_reservas'))
+
+
+
+# En las funciones que crean notificaciones:
+def notificar_empleados(pedido):
+    try:
+        mensaje = f"Nuevo pedido #{pedido.id} - Mesa {pedido.mesa or 'Sin asignar'}"
+        
+        # Notificar a cocineros
+        noti_cocinero = Notificacion(
+            mensaje=mensaje,
+            tipo_destino='cocinero',
+            pedido_id=pedido.id,
+            visto=False,
+            fecha=datetime.utcnow()
+        )
+        db.session.add(noti_cocinero)
+        
+        # Notificar a meseros
+        noti_mesero = Notificacion(
+            mensaje=mensaje,
+            tipo_destino='mesero',
+            pedido_id=pedido.id,
+            visto=False,
+            fecha=datetime.utcnow()
+        )
+        db.session.add(noti_mesero)
+        
+        db.session.commit()
+        return True
+    
+    except Exception as e:
+        app.logger.error(f'Error al crear notificaciones: {str(e)}')
+        db.session.rollback()
+        return False
+
+
+
+#modulo del cocinero
+
 
 
 @app.route('/pedido/<int:id>/completar', methods=['POST'])
 @login_required
 def completar_pedido(id):
-    if current_user.rol != RolUsuario.COCINERO.value:
+    if current_user.rol != RolUsuario.EMPLEADO.value or current_user.tipo_empleado != 'cocinero':
         flash('Acceso no autorizado', 'danger')
         return redirect(url_for('inicio'))
     
@@ -430,49 +731,165 @@ def completar_pedido(id):
     pedido.estado = 'listo'
     db.session.commit()
     flash('Pedido marcado como listo para servir', 'success')
-    return redirect(url_for('cocinero_pedidos'))
+    return redirect(url_for('empleado_pedidos'))
 
 #modulo del mesero
-@app.route('/mesero/pedidos')
-@login_required
-@rol_requerido(RolUsuario.MESERO.value)
-def mesero_pedidos():
-    pedidos = Pedido.query.filter_by(estado='listo').order_by(Pedido.fecha.asc()).all()
-    return render_template('mesero/pedidos.html', pedidos=pedidos)
 
-@app.route('/pedido/<int:id>/entregar', methods=['POST'])
+
+@app.route('/cambiar_estado_plato/<int:id>', methods=['POST'])
 @login_required
-def entregar_pedido(id):
-    if current_user.rol != RolUsuario.MESERO.value:
-        flash('Acceso no autorizado', 'danger')
-        return redirect(url_for('inicio'))
+@tipo_empleado_requerido('cocinero')
+def cambiar_estado_plato(id):
+    try:
+        plato = Plato.query.get_or_404(id)
+        nuevo_estado = request.form.get('estado') == 'agotado'
+        
+        # Cambiar el estado del plato
+        plato.agotado = nuevo_estado
+        db.session.commit()
+        
+        # Crear notificación de cambio de estado
+        estado = "agotado" if nuevo_estado else "disponible"
+        mensaje = f"El plato {plato.nombre} ha sido marcado como {estado}"
+        
+        notificacion = Notificacion(
+            mensaje=mensaje,
+            tipo_destino='cocinero',
+            visto=False,
+            fecha=datetime.utcnow()
+        )
+        db.session.add(notificacion)
+        db.session.commit()
+        
+        flash(f'Estado de {plato.nombre} actualizado correctamente a {estado}', 'success')
+        return redirect(url_for('control_disponibilidad'))
     
-    pedido = Pedido.query.get_or_404(id)
-    pedido.estado = 'completado'
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error al cambiar estado del plato: {str(e)}')
+        flash(f'Error al actualizar el estado del plato: {str(e)}', 'danger')
+        return redirect(url_for('control_disponibilidad'))
+
+# Módulo del mesero - Reservas
+
+
+
+@app.route('/reserva/<int:id>/confirmar', methods=['POST'])
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def confirmar_reserva(id):
+    reserva = Reserva.query.get_or_404(id)
+    reserva.estado = 'confirmada'
     db.session.commit()
-    flash('Pedido marcado como entregado', 'success')
-    return redirect(url_for('mesero_pedidos'))
+    flash('Reserva confirmada exitosamente', 'success')
+    return redirect(url_for('empleado_reservas'))
+
+@app.route('/reserva/<int:id>/cancelar', methods=['POST'])
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def cancelar_reserva(id):
+    reserva = Reserva.query.get_or_404(id)
+    reserva.estado = 'cancelada'
+    db.session.commit()
+    flash('Reserva cancelada exitosamente', 'warning')
+    return redirect(url_for('empleado_reservas'))
+
+@app.route('/reserva/<int:id>/asignar-mesa', methods=['POST'])
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def asignar_mesa(id):
+    reserva = Reserva.query.get_or_404(id)
+    mesa = request.form.get('mesa')
+    
+    if not mesa:
+        flash('Debe especificar un número de mesa', 'danger')
+        return redirect(url_for('empleado_reservas'))
+    
+    reserva.mesa = mesa
+    db.session.commit()
+    flash(f'Mesa {mesa} asignada a la reserva #{reserva.id}', 'success')
+    return redirect(url_for('empleado_reservas'))
+
+@app.route('/mesero/verificar-reserva', methods=['GET', 'POST'])
+@login_required
+@tipo_empleado_requerido('mesero')
+def verificar_reserva():
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        fecha = request.form.get('fecha')
+        
+        if nombre and fecha:
+            try:
+                fecha_busqueda = datetime.strptime(fecha, '%Y-%m-%d').date()
+                reservas = Reserva.query.filter(
+                    Reserva.usuario.has(Usuario.nombre.ilike(f'%{nombre}%')),
+                    db.func.date(Reserva.fecha) == fecha_busqueda
+                ).order_by(Reserva.fecha.asc()).all()
+                
+                if reservas:
+                    flash(f'Se encontraron {len(reservas)} reservas', 'success')
+                    return render_template('empleado/resultados_verificacion.html', reservas=reservas)
+                else:
+                    flash('No se encontraron reservas con esos datos', 'warning')
+            except ValueError:
+                flash('Formato de fecha incorrecto', 'danger')
+    
+    return redirect(url_for('empleado_reservas'))
 
 #stream de pedidos para mesero y coinero
-@app.route('/stream-pedidos')
+@app.route('/stream-reservas')
 @login_required
-def stream_pedidos():
+def stream_reservas():
     def event_stream():
         last_count = 0
         while True:
-            if current_user.rol == RolUsuario.COCINERO.value:
-                count = Pedido.query.filter_by(estado='pendiente').count()
-            elif current_user.rol == RolUsuario.MESERO.value:
-                count = Pedido.query.filter_by(estado='listo').count()
-            else:
-                break
-            
-            if count != last_count:
-                yield f"data: {count}\n\n"
-                last_count = count
-            time.sleep(2)
+            if current_user.rol == RolUsuario.EMPLEADO.value and current_user.tipo_empleado == 'mesero':
+                hoy = datetime.now().date()
+                count = Reserva.query.filter(
+                    Reserva.fecha >= datetime.combine(hoy, datetime.min.time())
+                ).count()
+                
+                if count != last_count:
+                    yield f"data: actualizar\n\n"
+                    last_count = count
+            time.sleep(5)
 
     return Response(event_stream(), mimetype="text/event-stream")
+
+
+def notificar_roles(pedido):
+    mensaje = f"Nuevo pedido confirmado por {current_user.nombre} - Mesa {pedido.mesa}"
+    for rol in ['MESERO', 'COCINERO']:
+        noti = Notificacion(mensaje=mensaje, rol_destino=rol, pedido=pedido)
+        db.session.add(noti)
+
+@app.route('/notificaciones/mesero')
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def notificaciones_mesero():
+    # Obtener conteo de notificaciones no vistas
+    count = Notificacion.query.filter_by(
+        rol_destino='MESERO',
+        visto=False
+    ).count()
+    
+    # Obtener última notificación no vista
+    last_notification = Notificacion.query.filter_by(
+        rol_destino='MESERO',
+        visto=False
+    ).order_by(Notificacion.fecha.desc()).first()
+    
+    return jsonify({
+        'count': count,
+        'last_message': last_notification.mensaje if last_notification else None
+    })
+
+@app.route('/pedidos/mesero/count')
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def pedidos_mesero_count():
+    count = Pedido.query.filter_by(estado='listo').count()
+    return jsonify({'count': count})
 
 # Enrutación inicial
 @app.route('/')
@@ -516,37 +933,44 @@ def actualizar_perfil():
 
 #modulo de menu
 @app.route('/menu')
+@login_required
 def menu():
     categorias = Categoria.query.options(db.joinedload(Categoria.platos)).all()
     return render_template('menu.html', menu=categorias)
 
 #modulo de reservas
 @app.route('/reservas', methods=['GET', 'POST'])
+@login_required
 def reservas():
-    form = ReservaForm()  # Crea una instancia del formulario
+    form = ReservaForm()
     
-    if form.validate_on_submit():  # Esto reemplaza request.method == 'POST'
+    if form.validate_on_submit():
         try:
             fecha_reserva = datetime.strptime(
                 f"{form.fecha.data} {form.hora.data}", 
                 "%Y-%m-%d %H:%M"
             )
             
-            if 'user_id' not in session:
-                session['reserva_temp'] = {
-                    'fecha': form.fecha.data.strftime('%Y-%m-%d'),
-                    'hora': form.hora.data.strftime('%H:%M'),
-                    'personas': form.personas.data,
-                    'comentarios': form.comentarios.data
-                }
-                flash('Por favor inicia sesión o regístrate para completar la reserva', 'info')
-                return redirect(url_for('login'))
+            # Verificar disponibilidad de mesa
+            mesa_reservada = None
+            if form.mesa.data:
+                reserva_existente = Reserva.query.filter(
+                    Reserva.fecha == fecha_reserva,
+                    Reserva.mesa == form.mesa.data,
+                    Reserva.estado != 'cancelada'
+                ).first()
+                
+                if reserva_existente:
+                    flash(f'La mesa {form.mesa.data} ya está reservada para esa hora', 'warning')
+                    return redirect(url_for('reservas'))
             
             nueva_reserva = Reserva(
                 fecha=fecha_reserva,
                 personas=form.personas.data,
+                mesa=form.mesa.data if form.mesa.data else None,
                 comentarios=form.comentarios.data,
-                usuario_id=session['user_id']
+                usuario_id=current_user.id,
+                estado='pendiente'
             )
             
             db.session.add(nueva_reserva)
@@ -559,7 +983,7 @@ def reservas():
             db.session.rollback()
             flash(f'Error al procesar la reserva: {str(e)}', 'danger')
     
-    return render_template('reservas.html', form=form)  # Pasa el formulario a la plantilla 
+    return render_template('reservas.html', form=form)
 
 #modulo de contacto
 @app.route('/contacto', methods=['GET', 'POST'], endpoint='contacto')
@@ -596,31 +1020,55 @@ def carrito():
     if request.method == 'POST':
         return procesar_pedido()
     
+    # Obtener items con las relaciones necesarias
     items = CarritoItem.query.filter_by(usuario_id=current_user.id)\
-                        .join(Plato)\
-                        .order_by(Plato.nombre).all()
+                    .join(Plato)\
+                    .options(
+                        db.joinedload(CarritoItem.plato).joinedload(Plato.categoria)
+                    ).all()
     
-    #cualculo de totales
-    subtotal = sum(item.plato.precio * item.cantidad for item in items)
-    envio = 2000
+    # Crear una estructura de datos serializable
+    items_data = []
+    for item in items:
+        item_data = {
+            'id': item.id,
+            'cantidad': item.cantidad,
+            'plato': {
+                'id': item.plato.id,
+                'nombre': item.plato.nombre,
+                'precio': float(item.plato.precio),
+                'imagen': item.plato.imagen if item.plato.imagen else 'default-dish.jpg',
+                'categoria': {
+                    'id': item.plato.categoria.id,
+                    'nombre': item.plato.categoria.nombre
+                }
+            }
+        }
+        items_data.append(item_data)
+    
+    # Cálculo de totales
+    subtotal = sum(item['plato']['precio'] * item['cantidad'] for item in items_data)
+    envio = 2000  # Costo fijo de envío
     total = subtotal + envio
 
     return render_template('carrocompras.html',
-                        cart_items=items,
+                        items=items_data,
                         subtotal=subtotal,
                         envio=envio,
                         total=total)
 
-@app.route('/carrito/agregar/<int:plato_id>', methods=['POST'])
+@app.route('/agregar-al-carrito/<int:plato_id>', methods=['POST'])
 @login_required
 def agregar_al_carrito(plato_id):
     plato = Plato.query.get_or_404(plato_id)
-    item_existente = CarritoItem.query.filter_by(
-        usuario_id=current_user.id,
-        plato_id=plato_id
-    ).first()
-
+    
     try:
+        # Verificar si el plato ya está en el carrito
+        item_existente = CarritoItem.query.filter_by(
+            usuario_id=current_user.id,
+            plato_id=plato_id
+        ).first()
+
         if item_existente:
             item_existente.cantidad += 1
         else:
@@ -632,31 +1080,55 @@ def agregar_al_carrito(plato_id):
             db.session.add(nuevo_item)
         
         db.session.commit()
-        flash(f'"{plato.nombre}" agregado al carrito', 'success')
+        
+        # Obtener conteo actualizado del carrito
+        cart_count = CarritoItem.query.filter_by(usuario_id=current_user.id).count()
+        
+        return jsonify({
+            "success": True,
+            "message": f'"{plato.nombre}" agregado al carrito',
+            "cart_count": cart_count
+        })
+        
     except Exception as e:
         db.session.rollback()
-        flash('Error al agregar al carrito', 'danger')
-    
-    return redirect(request.referrer or url_for('menu'))
+        return jsonify({
+            "success": False,
+            "message": f"Error al agregar al carrito: {str(e)}"
+        }), 400
 
-@app.route('/carrito/actualizar/<int:item_id>', methods=['POST'])
+@app.route('/actualizar-cantidad/<int:item_id>', methods=['POST'])
 @login_required
-def actualizar_carrito(item_id):
-    data = request.get_json()
-    item = CarritoItem.query.filter_by(
-        id=item_id,
-        usuario_id=current_user.id
-    ).first_or_404()
-
+def actualizar_cantidad(item_id):
     try:
-        item.cantidad = int(data['cantidad'])
+        item = CarritoItem.query.filter_by(id=item_id, usuario_id=current_user.id).first_or_404()
+        
+        action = request.form.get('action')
+        if action == 'increase':
+            item.cantidad += 1
+        elif action == 'decrease':
+            item.cantidad = max(1, item.cantidad - 1)
+        
         db.session.commit()
-        return jsonify({'success': True})
+        
+        items = CarritoItem.query.filter_by(usuario_id=current_user.id).all()
+        subtotal = sum(float(item.plato.precio) * item.cantidad for item in items)
+        return jsonify({
+            'success': True,
+            'newQuantity': item.cantidad,
+            'subtotal': float(item.plato.precio) * item.cantidad,
+            'newTotals': {
+                'subtotal': subtotal,
+                'servicio': subtotal * 0.1,
+                'total': subtotal * 1.1
+            }
+        })
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 400
-
-@app.route('/carrito/eliminar/<int:item_id>', methods=['POST'])
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/eliminar-del-carrito/<int:item_id>', methods=['POST'])
 @login_required
 def eliminar_del_carrito(item_id):
     item = CarritoItem.query.filter_by(
@@ -668,23 +1140,111 @@ def eliminar_del_carrito(item_id):
         db.session.delete(item)
         db.session.commit()
         flash('Ítem eliminado del carrito', 'success')
-        return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 400
-@login_required
-
-@app.route('/carrito/vaciar', methods=['POST'])
-def vaciar_carrito():
-    try:
-        CarritoItem.query.filter_by(usuario_id=current_user.id).delete()
-        db.session.commit()
-        flash('Carrito vaciado correctamente', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error al vaciar el carrito', 'danger')
+        flash('Error al eliminar ítem', 'danger')
     
     return redirect(url_for('carrito'))
+
+@app.route('/confirmar-pedido', methods=['POST'])
+@login_required
+def confirmar_pedido():
+    items_carrito = CarritoItem.query.filter_by(usuario_id=current_user.id).all()
+
+    if not items_carrito:
+        flash('Tu carrito está vacío', 'warning')
+        return redirect(url_for('carrito'))
+
+    try:
+        mesa = request.form.get('mesa')
+
+        # Calcular totales
+        subtotal = sum(item.plato.precio * item.cantidad for item in items_carrito)
+        servicio = subtotal * 0.1  # 10% de servicio
+        total = subtotal + servicio
+
+        # Crear pedido
+        nuevo_pedido = Pedido(
+            usuario_id=current_user.id,
+            mesa=mesa,
+            total=total,
+            estado='pendiente',
+            fecha=datetime.utcnow()
+        )
+        db.session.add(nuevo_pedido)
+        db.session.flush()  # Obtener el ID
+
+        # Mover items del carrito al pedido
+        for item in items_carrito:
+            pedido_item = PedidoItem(
+                pedido_id=nuevo_pedido.id,
+                plato_id=item.plato_id,
+                cantidad=item.cantidad,
+                precio_unitario=item.plato.precio,
+                comentarios=request.form.get('comentarios', '')
+            )
+            db.session.add(pedido_item)
+            db.session.delete(item)
+
+        # Crear notificaciones más detalladas
+        mensaje_cocinero = f"Nuevo pedido #{nuevo_pedido.id} - {len(items_carrito)} platos - Mesa: {mesa or 'Sin asignar'}"
+        mensaje_mesero = f"Pedido #{nuevo_pedido.id} listo para preparar - Mesa: {mesa or 'Sin asignar'}"
+
+        noti_cocinero = Notificacion(
+            mensaje=mensaje_cocinero,
+            tipo_destino='cocinero',
+            pedido_id=nuevo_pedido.id,
+            visto=False,
+            fecha=datetime.utcnow()
+        )
+
+        noti_mesero = Notificacion(
+            mensaje=mensaje_mesero,
+            tipo_destino='mesero',
+            pedido_id=nuevo_pedido.id,
+            visto=False,
+            fecha=datetime.utcnow()
+        )
+
+        db.session.add_all([noti_cocinero, noti_mesero])
+        db.session.commit()
+
+        flash('Pedido confirmado con éxito!', 'success')
+        return redirect(url_for('historial_compras'))
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error al confirmar pedido: {str(e)}')
+        flash(f'Error al confirmar pedido: {str(e)}', 'danger')
+        return redirect(url_for('carrito'))
+    
+@app.route('/stream-pedidos')
+@login_required
+def stream_pedidos():
+    def event_stream():
+        last_count = 0
+        while True:
+                if current_user.is_authenticated and current_user.rol == RolUsuario.EMPLEADO.value:
+
+                    count = Notificacion.query.filter_by(
+                        tipo_destino=current_user.tipo_empleado,
+                        visto=False
+                    ).count()
+                
+                    if count != last_count:
+                        yield f"data: actualizar\n\n"
+                        last_count = count
+                time.sleep(2)
+
+    return Response(event_stream(), mimetype="text/event-stream")
+
+@app.route('/historial-compras')
+@login_required
+def historial_compras():
+    pedidos = Pedido.query.filter_by(usuario_id=current_user.id)\
+                        .order_by(Pedido.fecha.desc()).all()
+    return render_template('historial_compras.html', pedidos=pedidos)
+
 
 # Funciones auxiliares
 def procesar_pedido():
@@ -703,6 +1263,7 @@ def procesar_pedido():
         # Crear pedido
         nuevo_pedido = Pedido(
             usuario_id=current_user.id,
+            mesa=mesa,
             total=total,
             estado='pendiente',
             comentarios=request.form.get('comentarios', '')
@@ -733,16 +1294,6 @@ def procesar_pedido():
         db.session.rollback()
         flash(f'Error al procesar el pedido: {str(e)}', 'danger')
         return redirect(url_for('carrito'))
-
-@app.route('/historial')
-def historial_compras():
-    if 'user_id' not in session:
-        flash('Por favor inicia sesión para ver tu historial', 'info')
-        return redirect(url_for('login'))
-    
-    pedidos = Pedido.query.filter_by(usuario_id=session['user_id'])\
-                        .order_by(Pedido.fecha.desc()).all()
-    return render_template('historial.html', pedidos=pedidos)
 
 #perfil de usuario.
 @app.route('/perfil/foto', methods=['POST'])
@@ -828,10 +1379,8 @@ def login():
     if current_user.is_authenticated:
         if current_user.rol == RolUsuario.ADMIN.value:
             return redirect(url_for('admin_panel'))
-        elif current_user.rol == RolUsuario.COCINERO.value:
-            return redirect(url_for('cocinero_pedidos'))
-        elif current_user.rol == RolUsuario.MESERO.value:
-            return redirect(url_for('mesero_pedidos'))
+        elif current_user.rol == RolUsuario.EMPLEADO.value:
+            return redirect(url_for('empleado_dashboard'))
         return redirect(url_for('inicio'))
     
     form = LoginForm()
@@ -842,35 +1391,15 @@ def login():
         if user and check_password_hash(user.password, form.password.data):
             login_user(user)
             
-            # Redirección basada en rol
             if user.rol == RolUsuario.ADMIN.value:
                 return redirect(url_for('admin_panel'))
-            elif user.rol == RolUsuario.COCINERO.value:
-                return redirect(url_for('cocinero_pedidos'))
-            elif user.rol == RolUsuario.MESERO.value:
-                return redirect(url_for('mesero_pedidos'))
+            elif user.rol == RolUsuario.EMPLEADO.value:
+                return redirect(url_for('empleado_dashboard'))
             return redirect(url_for('inicio'))
-            
         
         flash('Credenciales incorrectas', 'danger')
     
     return render_template('login.html', form=form)
-
-@app.route('/carrito/confirmar', methods=['POST'])
-@login_required
-def confirmar_pedido():
-    # 1. Crear el pedido en la base de datos
-    nuevo_pedido = Pedido(
-        usuario_id=current_user.id,
-        estado='pendiente',  # Estado inicial para que el cocinero lo vea
-        # ... otros campos
-    )
-    db.session.add(nuevo_pedido)
-    db.session.commit()
-
-    # 2. Notificar a cocineros/meseros (vía SSE o WebSocket)
-    # (Se implementa en el paso 3 del plan anterior)
-    return redirect(url_for('historial_compras'))
 
 # cierre de sesion
 @app.route('/logout')
@@ -882,6 +1411,7 @@ def logout():
 
 # Rutas de usuario
 @app.route('/mis_reservas')
+@login_required
 def mis_reservas():
     if 'user_id' not in session:
         flash('Por favor inicia sesión para ver tus reservas', 'info')
@@ -890,9 +1420,278 @@ def mis_reservas():
     reservas = Reserva.query.filter_by(usuario_id=session['user_id']).order_by(Reserva.fecha.desc()).all()
     return render_template('mis_reservas.html', reservas=reservas)
 
+
+# Ruta para historial de clientes
+@app.route('/historial')
+@login_required
+def historial_cliente():
+    pedidos = Pedido.query.filter_by(usuario_id=current_user.id).order_by(Pedido.fecha.desc()).all()
+    return render_template('historial_cliente.html', pedidos=pedidos)
+
+
+@app.route('/notificaciones/no-vistas')
+@login_required
+def notificaciones_no_vistas():
+    if current_user.rol != RolUsuario.EMPLEADO.value or current_user.tipo_empleado not in ['mesero', 'cocinero']:
+        return jsonify({'count': 0})
+    
+    count = Notificacion.query.filter_by(
+        rol_destino=current_user.rol.upper(),
+        visto=False
+    ).count()
+    
+    return jsonify({'count': count})
+
+
+@app.route('/empleado/marcar-notificaciones-vistas', methods=['POST'])
+@login_required
+@rol_requerido(RolUsuario.EMPLEADO.value)
+def marcar_notificaciones_vistas():
+    Notificacion.query.filter_by(
+        tipo_destino=current_user.tipo_empleado,
+        visto=False
+    ).update({'visto': True})
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+# Agregar pruebas unitarias para verificar el flujo
+def test_notificaciones_pedido(self):
+    with self.client:
+        # Login como cliente
+        self.login_cliente()
+        
+        # Agregar items al carrito
+        self.agregar_al_carrito()
+        
+        # Confirmar pedido
+        response = self.confirmar_pedido()
+        
+        # Verificar que se crearon notificaciones
+        notis_cocinero = Notificacion.query.filter_by(tipo_destino='cocinero').count()
+        notis_mesero = Notificacion.query.filter_by(tipo_destino='mesero').count()
+        
+        self.assertEqual(notis_cocinero, 1)
+        self.assertEqual(notis_mesero, 1)
+
+@app.route('/pedido/<int:pedido_id>')
+@login_required
+def detalle_pedido(pedido_id):
+    pedido = Pedido.query.get_or_404(pedido_id)
+    return render_template('detalle_pedido.html', pedido=pedido)
+
+
+@app.route('/entregar_pedido/<int:id>', methods=['POST'])
+@login_required
+def entregar_pedido(id):
+    pedido = Pedido.query.get_or_404(id)
+
+    # Aquí puedes aplicar lógica de control de acceso si quieres limitar quién puede entregar
+    # Ejemplo: solo cocineros o administradores
+
+    pedido.estado = 'entregado'  # o el valor que manejes en tu app
+    db.session.commit()
+    flash('El pedido ha sido marcado como entregado.', 'success')
+    return redirect(url_for('stream_pedidos'))  # o a donde quieras volver
+
+@app.route('/admin/inventario')
+@login_required
+def gestion_inventario():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    filtro = request.args.get('filtro', 'todos')
+    
+    if filtro == 'agotados':
+        platos = Plato.query.filter(Plato.stock <= 0).order_by(Plato.nombre).all()
+    elif filtro == 'bajos':
+        platos = Plato.query.filter(Plato.stock <= Plato.stock_minimo).order_by(Plato.nombre).all()
+    else:
+        platos = Plato.query.order_by(Plato.nombre).all()
+    
+    # Estadísticas para el dashboard
+    total_platos = Plato.query.count()
+    platos_agotados = Plato.query.filter(Plato.stock <= 0).count()
+    platos_bajo_stock = Plato.query.filter(Plato.stock <= Plato.stock_minimo).count()
+    
+    return render_template('admin/inventario.html',
+                         platos=platos,
+                         filtro_actual=filtro,
+                         total_platos=total_platos,
+                         platos_agotados=platos_agotados,
+                         platos_bajo_stock=platos_bajo_stock)
+
+@app.route('/admin/inventario/ajustar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def ajustar_inventario(id):
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    plato = Plato.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            tipo_operacion = request.form.get('tipo_operacion')
+            cantidad = int(request.form.get('cantidad'))
+            motivo = request.form.get('motivo', 'Ajuste manual')
+            
+            if tipo_operacion == 'entrada':
+                plato.stock += cantidad
+            elif tipo_operacion == 'salida':
+                plato.stock = max(0, plato.stock - cantidad)
+            
+            plato.fecha_actualizacion = datetime.utcnow()
+            plato.agotado = plato.stock <= 0
+            
+            # Registrar movimiento en el historial
+            movimiento = MovimientoInventario(
+                plato_id=plato.id,
+                tipo=tipo_operacion,
+                cantidad=cantidad,
+                stock_actual=plato.stock,
+                motivo=motivo,
+                usuario_id=current_user.id
+            )
+            
+            db.session.add(movimiento)
+            db.session.commit()
+            
+            flash(f'Inventario de {plato.nombre} actualizado correctamente', 'success')
+            return redirect(url_for('gestion_inventario'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar inventario: {str(e)}', 'danger')
+    
+    return render_template('admin/ajustar_inventario.html', plato=plato)
+
+@app.route('/admin/inventario/historial')
+@login_required
+def historial_inventario():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    movimientos = MovimientoInventario.query.order_by(MovimientoInventario.fecha.desc()).all()
+    return render_template('admin/historial_inventario.html', movimientos=movimientos)
+
+# Añadir a app.py
+@app.route('/admin/usuarios')
+@login_required
+def gestion_usuarios():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    usuarios = Usuario.query.order_by(Usuario.nombre).all()
+    return render_template('admin/gestion_usuarios.html', usuarios=usuarios)
+
+@app.route('/admin/usuarios/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_usuario(id):
+    usuario = Usuario.query.get_or_404(id)
+    # Implementar lógica de edición
+    return render_template('admin/editar_usuario.html', usuario=usuario)
+
+@app.route('/admin/usuarios/eliminar/<int:id>', methods=['POST'])
+@login_required
+def eliminar_usuario(id):
+    # Implementar lógica de eliminación segura
+    return redirect(url_for('gestion_usuarios'))
+
+@app.route('/admin/reportes')
+@login_required
+def reportes():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    
+    fecha_desde = request.args.get('fecha_desde')
+    fecha_hasta = request.args.get('fecha_hasta')
+    estado = request.args.get('estado')
+    
+    query = Pedido.query
+    
+    # Apply filters if they exist
+    if fecha_desde:
+        try:
+            fecha_desde = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            query = query.filter(Pedido.fecha >= fecha_desde)
+        except ValueError:
+            flash('Formato de fecha desde incorrecto', 'warning')
+    
+    if fecha_hasta:
+        try:
+            fecha_hasta = datetime.strptime(fecha_hasta, '%Y-%m-%d')
+            query = query.filter(Pedido.fecha <= fecha_hasta)
+        except ValueError:
+            flash('Formato de fecha hasta incorrecto', 'warning')
+    
+    if estado:
+        query = query.filter(Pedido.estado == estado)
+    
+    pedidos = query.order_by(Pedido.fecha.desc()).all()
+    
+    return render_template('admin/reportes.html', pedidos=pedidos)
+@app.route('/admin/reportes/exportar')
+@login_required
+def exportar_reportes():
+    # Lógica para exportar a Excel/PDF
+    return generar_reporte()
+
+# Modelo para configuración del sistema
+class Configuracion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    site_name = db.Column(db.String(100), default="Mi Plataforma")
+    admin_email = db.Column(db.String(100), default="admin@ejemplo.com")
+    theme_color = db.Column(db.String(7), default="#3498db")
+    maintenance_mode = db.Column(db.Boolean, default=False)
+
+# Función para obtener la configuración actual (singleton)
+def get_configuracion():
+    config = Configuracion.query.first()
+    if not config:
+        config = Configuracion()
+        db.session.add(config)
+        db.session.commit()
+    return config
+
+# Context processor para pasar la configuración a todas las plantillas
+@app.context_processor
+def inject_config():
+    config = get_configuracion()
+    return dict(
+        site_name=config.site_name,
+        admin_email=config.admin_email,
+        theme_color=config.theme_color,
+        maintenance_mode=config.maintenance_mode
+    )
+
+@app.route('/admin/configuracion', methods=['GET', 'POST'])
+@login_required
+def configuracion_sistema():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+
+    config = get_configuracion()
+    if request.method == 'POST':
+        config.site_name = request.form.get('siteName', config.site_name)
+        config.admin_email = request.form.get('adminEmail', config.admin_email)
+        config.theme_color = request.form.get('themeColor', config.theme_color)
+        config.maintenance_mode = request.form.get('maintenanceMode') == 'on'
+        db.session.commit()
+        flash('Configuración actualizada correctamente', 'success')
+        return redirect(url_for('configuracion_sistema'))
+
+    return render_template('admin/configuracion.html', config=config)
+
 if __name__ == '__main__':    
     with app.app_context():
         db.create_all()  
         agregar_datos_iniciales()  
         crear_admin_inicial() 
-    app.run(debug=True) 
+    app.run(debug=True)

@@ -1,0 +1,98 @@
+// Funciones comunes para empleados
+
+// Toggle del menú lateral en móviles
+document.addEventListener('DOMContentLoaded', function() {
+    // Menú toggle
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function() {
+            document.querySelector('.empleado-sidebar').classList.toggle('active');
+        });
+    }
+
+    // Actualización en tiempo real para notificaciones
+    if (document.querySelector('.notification-dropdown')) {
+        const eventSource = new EventSource('/stream-pedidos');
+        eventSource.onmessage = function(e) {
+            if (e.data === 'actualizar') {
+                // Actualizar el badge de notificaciones
+                fetch('/notificaciones/no-vistas')
+                    .then(response => response.json())
+                    .then(data => {
+                        const badge = document.querySelector('.notification-badge');
+                        if (data.count > 0) {
+                            if (!badge) {
+                                const btn = document.querySelector('.btn-notification');
+                                const newBadge = document.createElement('span');
+                                newBadge.className = 'notification-badge';
+                                newBadge.textContent = data.count;
+                                btn.appendChild(newBadge);
+                            } else {
+                                badge.textContent = data.count;
+                            }
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                    });
+            }
+        };
+    }
+
+    // Confirmaciones antes de acciones importantes
+    document.querySelectorAll('.btn-marcar-entregado, .btn-marcar-list').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (!confirm(this.getAttribute('data-confirm') || '¿Está seguro?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+
+// Función para mostrar notificación toast
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.top = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '1100';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast show align-items-center text-white bg-${type} border-0`;
+    toast.role = 'alert';
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.style.marginBottom = '10px';
+
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    document.getElementById('toast-container').appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Si hay mensajes flash, mostrarlos como toasts
+document.addEventListener('DOMContentLoaded', function() {
+    const flashMessages = document.querySelectorAll('.alert');
+    flashMessages.forEach(alert => {
+        const type = alert.classList.contains('alert-danger') ? 'danger' : 
+                     alert.classList.contains('alert-warning') ? 'warning' : 
+                     alert.classList.contains('alert-info') ? 'info' : 'success';
+        showToast(alert.textContent.trim(), type);
+        alert.remove();
+    });
+});

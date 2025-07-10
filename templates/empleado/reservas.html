@@ -1,0 +1,268 @@
+{% extends "empleado/base.html" %}
+
+{% block title %}Gestión de Reservas - Mesero{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-0">Gestión de Reservas</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <button class="btn btn-outline-primary" id="btn-refresh">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verificarModal">
+                    <i class="fas fa-search"></i> Verificar Reserva
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Reservas Hoy</h5>
+                    <p class="display-6">{{ reservas_hoy }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Confirmadas</h5>
+                    <p class="display-6">{{ reservas_confirmadas }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Por Confirmar</h5>
+                    <p class="display-6">{{ reservas_hoy - reservas_confirmadas }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de reservas -->
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Fecha/Hora</th>
+                            <th>Personas</th>
+                            <th>Mesa</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reserva in reservas %}
+                        <tr class="{% if reserva.estado == 'cancelada' %}table-secondary{% elif reserva.estado == 'confirmada' %}table-success{% elif reserva.estado == 'completada' %}table-primary{% endif %}">
+                            <td>{{ reserva.id }}</td>
+                            <td>{{ reserva.usuario.nombre }}</td>
+                            <td>
+                                {{ reserva.fecha.strftime('%d/%m/%Y') }}<br>
+                                <small>{{ reserva.fecha.strftime('%I:%M %p') }}</small>
+                            </td>
+                            <td>{{ reserva.personas }}</td>
+                            <td>
+                                {% if reserva.mesa %}
+                                    {{ reserva.mesa }}
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if reserva.estado == 'pendiente' %}bg-warning text-dark
+                                    {% elif reserva.estado == 'confirmada' %}bg-success
+                                    {% elif reserva.estado == 'cancelada' %}bg-danger
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ reserva.estado|title }}
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                {% if reserva.estado == 'pendiente' %}
+                                    <form method="POST" action="{{ url_for('confirmar_reserva', id=reserva.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-success" title="Confirmar">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if reserva.estado != 'cancelada' %}
+                                    <button class="btn btn-sm btn-primary btn-asignar-mesa" 
+                                        data-id="{{ reserva.id }}" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#asignarMesaModal"
+                                        title="Asignar mesa">
+                                        <i class="fas fa-utensils"></i>
+                                    </button>
+                                    
+                                    <form method="POST" action="{{ url_for('cancelar_reserva', id=reserva.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Cancelar"
+                                            onclick="return confirm('¿Confirmar cancelación de esta reserva?')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if reserva.estado == 'confirmada' and reserva.mesa %}
+                                    <form method="POST" action="{{ url_for('marcar_como_completada', id=reserva.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-info" title="Marcar como completada">
+                                            <i class="fas fa-flag-checkered"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No hay reservas programadas</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para asignar mesa -->
+<div class="modal fade" id="asignarMesaModal" tabindex="-1" aria-labelledby="asignarMesaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="asignarMesaModalLabel">Asignar Mesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formAsignarMesa" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="mesa" class="form-label">Número de Mesa</label>
+                        <select class="form-select" id="mesa" name="mesa" required>
+                            <option value="">Seleccionar mesa...</option>
+                            <option value="1">Mesa 1 - Ventana</option>
+                            <option value="2">Mesa 2 - Ventana</option>
+                            <option value="3">Mesa 3 - Centro</option>
+                            <option value="4">Mesa 4 - Centro</option>
+                            <option value="5">Mesa 5 - Terraza</option>
+                            <option value="6">Mesa 6 - Terraza</option>
+                            <option value="7">Mesa 7 - Privada</option>
+                            <option value="8">Mesa 8 - Privada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Asignar Mesa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para verificar reserva -->
+<div class="modal fade" id="verificarModal" tabindex="-1" aria-labelledby="verificarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="verificarModalLabel">Verificar Reserva</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('verificar_reserva') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Cliente</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label">Fecha de Reserva</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Buscar Reserva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Actualización en tiempo real
+const eventSource = new EventSource('/stream-reservas');
+eventSource.onmessage = function(e) {
+    if (e.data === 'actualizar') {
+        showToast('¡Nueva reserva recibida!', 'info');
+        setTimeout(() => location.reload(), 2000);
+    }
+};
+
+// Manejo del modal para asignar mesas
+document.querySelectorAll('.btn-asignar-mesa').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const reservaId = this.dataset.id;
+        const form = document.getElementById('formAsignarMesa');
+        form.action = `/reserva/${reservaId}/asignar-mesa`;
+    });
+});
+
+// Función para mostrar notificaciones
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.top = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '1100';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast show align-items-center text-white bg-${type} border-0`;
+    toast.role = 'alert';
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.style.marginBottom = '10px';
+
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    document.getElementById('toast-container').appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// Botón de actualización manual
+document.getElementById('btn-refresh').addEventListener('click', function() {
+    location.reload();
+});
+</script>
+{% endblock %}

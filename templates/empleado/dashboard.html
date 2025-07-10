@@ -1,0 +1,97 @@
+{% extends "empleado/base.html" %}
+
+{% block title %}Dashboard de Empleado{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="row">
+        {% if current_user.tipo_empleado == 'cocinero' %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-clipboard-list me-2"></i> Pedidos Pendientes
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ pedidos_pendientes_count }} Pedidos</h5>
+                    <p class="card-text">Pedidos en espera de preparación</p>
+                    <a href="{{ url_for('empleado_pedidos') }}" class="btn btn-primary">
+                        Ver Pedidos <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-box-open me-2"></i> Control Disponibilidad
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ platos_agotados_count }} Platos agotados</h5>
+                    <p class="card-text">Gestión de inventario</p>
+                    <a href="{{ url_for('control_disponibilidad') }}" class="btn btn-warning">
+                        Gestionar <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-clipboard-list me-2"></i> Pedidos Listos
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ pedidos_listos_count }} Pedidos</h5>
+                    <p class="card-text">Pedidos listos para servir</p>
+                    <a href="{{ url_for('empleado_pedidos') }}" class="btn btn-primary">
+                        Ver Pedidos <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-calendar-day me-2"></i> Reservas Hoy
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ reservas_hoy_count }} Reservas</h5>
+                    <p class="card-text">Reservas para hoy</p>
+                    <a href="{{ url_for('empleado_reservas') }}" class="btn btn-success">
+                        Ver Reservas <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-bell me-2"></i> Últimas notificaciones
+                </div>
+                <div class="card-body">
+                    {% if notificaciones_recientes %}
+                    <div class="list-group">
+                        {% for notificacion in notificaciones_recientes %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <p class="mb-1">{{ notificacion.mensaje }}</p>
+                                <small class="text-muted">{{ notificacion.fecha.strftime('%H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="mb-0 text-muted">No hay notificaciones recientes</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

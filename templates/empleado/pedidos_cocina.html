@@ -1,0 +1,112 @@
+{% extends "empleado/base.html" %}
+
+{% block title %}Pedidos Pendientes - Cocina{% endblock %}
+
+{% block content %}
+<div class="pedidos-container">
+    <h2 class="mb-4">Pedidos Pendientes</h2>
+    
+    {% if pedidos %}
+    <div class="pedidos-list">
+        {% for pedido in pedidos %}
+        <div class="pedido-card">
+            <div class="pedido-header">
+                <h3 class="pedido-title">Pedido #{{ pedido.id }}</h3>
+                <span class="pedido-time">{{ pedido.fecha.strftime('%H:%M') }}</span>
+            </div>
+            <p class="pedido-cliente"><strong>Cliente:</strong> {{ pedido.usuario.nombre }}</p>
+            <p class="pedido-mesa"><strong>Mesa:</strong> {{ pedido.mesa or 'No especificada' }}</p>
+            
+            <ul class="pedido-items">
+                {% for item in pedido.items %}
+                <li>
+                    {{ item.cantidad }}x {{ item.plato.nombre }}
+                    {% if item.comentarios %}
+                    <small class="text-muted d-block">Nota: {{ item.comentarios }}</small>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <form method="POST" action="{{ url_for('completar_pedido', id=pedido.id) }}" class="text-end">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-success btn-marcar-list">
+                    <i class="fas fa-check-circle me-2"></i>Marcar como Listo
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No hay pedidos pendientes en este momento.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Actualización en tiempo real
+const eventSource = new EventSource('/stream-pedidos');
+eventSource.onmessage = function(e) {
+    if (e.data === 'actualizar') {
+        location.reload();
+    }
+};
+
+// Confirmación antes de marcar como listo
+document.querySelectorAll('.btn-marcar-list').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        if (!confirm('¿Confirmar que este pedido está listo para servir?')) {
+            e.preventDefault();
+        }
+    });
+});
+
+// En pedidos_cocina.html y pedidos_mesero.html
+const eventSource = new EventSource('/stream-pedidos');
+eventSource.onmessage = function(e) {
+    if (e.data === 'actualizar') {
+        // Mostrar notificación
+        showToast('¡Nuevo pedido recibido!', 'info');
+        // Recargar la página después de un breve retraso
+        setTimeout(() => location.reload(), 2000);
+    }
+};
+
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.top = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '1100';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast show align-items-center text-white bg-${type} border-0`;
+    toast.role = 'alert';
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.style.marginBottom = '10px';
+
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    document.getElementById('toast-container').appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "empleado/base.html" %}
+
+{% block title %}Resultados de Búsqueda{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Resultados de Búsqueda</h2>
+        <a href="{{ url_for('empleado_reservas') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i> Volver
+        </a>
+    </div>
+
+    {% if reservas %}
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Fecha/Hora</th>
+                            <th>Personas</th>
+                            <th>Mesa</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reserva in reservas %}
+                        <tr class="{% if reserva.estado == 'cancelada' %}table-secondary{% elif reserva.estado == 'confirmada' %}table-success{% elif reserva.estado == 'completada' %}table-primary{% endif %}">
+                            <td>{{ reserva.id }}</td>
+                            <td>{{ reserva.usuario.nombre }}</td>
+                            <td>
+                                {{ reserva.fecha.strftime('%d/%m/%Y') }}<br>
+                                <small>{{ reserva.fecha.strftime('%I:%M %p') }}</small>
+                            </td>
+                            <td>{{ reserva.personas }}</td>
+                            <td>
+                                {% if reserva.mesa %}
+                                    {{ reserva.mesa }}
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if reserva.estado == 'pendiente' %}bg-warning text-dark
+                                    {% elif reserva.estado == 'confirmada' %}bg-success
+                                    {% elif reserva.estado == 'cancelada' %}bg-danger
+                                    {% else %}bg-primary{% endif %}">
+                                    {{ reserva.estado|title }}
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                {% if reserva.estado == 'pendiente' %}
+                                    <form method="POST" action="{{ url_for('confirmar_reserva', id=reserva.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-success" title="Confirmar">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if reserva.estado != 'cancelada' %}
+                                    <button class="btn btn-sm btn-primary btn-asignar-mesa" 
+                                        data-id="{{ reserva.id }}" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#asignarMesaModal"
+                                        title="Asignar mesa">
+                                        <i class="fas fa-utensils"></i>
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        No se encontraron reservas con los criterios de búsqueda.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

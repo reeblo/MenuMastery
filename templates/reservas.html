@@ -30,15 +30,11 @@
                                 {{ form.personas(class="form-select form-select-lg") }}
                             </div>
 
-                            <!-- mesa -->
-                            <div>
-                                
-                            </div>
-
-                            <!-- Información adicional -->
+                            <!-- Selección de mesa -->
                             <div class="mb-4">
-                                {{ form.comentarios.label(class="form-label fw-bold") }}
-                                {{ form.comentarios(class="form-control", rows=3) }}
+                                {{ form.mesa.label(class="form-label fw-bold") }}
+                                {{ form.mesa(class="form-select") }}
+                                <small class="text-muted">Puedes dejar sin selección para que asignemos la mejor mesa disponible</small>
                             </div>
 
                             <!-- Datos de contacto (si no está logueado) -->
@@ -88,4 +84,26 @@
         </div>
     </div>
 </section>
+
+<script>
+// Actualización en tiempo real de reservas
+const eventSourceReservas = new EventSource('/stream-reservas');
+eventSourceReservas.onmessage = function(e) {
+    if (e.data === 'actualizar') {
+        location.reload();
+    }
+};
+
+// Manejo del modal para asignar mesas
+document.querySelectorAll('.btn-asignar-mesa').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const reservaId = this.dataset.id;
+        const form = document.getElementById('formAsignarMesa');
+        form.action = `/reserva/${reservaId}/asignar-mesa`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalAsignarMesa'));
+        modal.show();
+    });
+});
+</script>
 {% endblock %}

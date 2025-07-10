@@ -1,0 +1,199 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ titulo }} - Panel Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line me-2"></i>{{ titulo }}</h2>
+        
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                    id="dropdownFiltro" data-bs-toggle="dropdown">
+                <i class="fas fa-filter me-1"></i>
+                {% if request.args.get('estado') %}
+                    Filtro: {{ request.args.get('estado')|title }}
+                {% else %}
+                    Filtrar por estado
+                {% endif %}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('historial_admin') }}">Todos</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="?estado=pendiente">Pendientes</a></li>
+                <li><a class="dropdown-item" href="?estado=preparacion">En preparación</a></li>
+                <li><a class="dropdown-item" href="?estado=enviado">Enviados</a></li>
+                <li><a class="dropdown-item" href="?estado=completado">Completados</a></li>
+                <li><a class="dropdown-item" href="?estado=cancelado">Cancelados</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Tarjetas de estadísticas -->
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">Total Pedidos</h5>
+                    <h2 class="mb-0">{{ estadisticas.total_pedidos }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">Completados</h5>
+                    <h2 class="mb-0">{{ estadisticas.completados }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">En Proceso</h5>
+                    <h2 class="mb-0">{{ estadisticas.en_proceso }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">Cancelados</h5>
+                    <h2 class="mb-0">{{ estadisticas.cancelados }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            {% if pedidos.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>N° Pedido</th>
+                            <th>Cliente</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos.items %}
+                        <tr>
+                            <td>#{{ pedido.id }}</td>
+                            <td>{{ pedido.cliente.nombre }}</td>
+                            <td>{{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>${{ "%.2f"|format(pedido.total) }}</td>
+                            <td>
+                                <select class="form-select form-select-sm estado-pedido" 
+                                        data-pedido-id="{{ pedido.id }}">
+                                    {% for estado in ['pendiente', 'preparacion', 'enviado', 'completado', 'cancelado'] %}
+                                    <option value="{{ estado }}" {{ 'selected' if pedido.estado == estado }}>
+                                        {{ estado|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('detalle_pedido', pedido_id=pedido.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-receipt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if pedidos.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="?pagina={{ pedidos.prev_num }}{% if request.args.get('estado') %}&estado={{ request.args.get('estado') }}{% endif %}">
+                            &laquo; Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in pedidos.iter_pages() %}
+                    <li class="page-item {{ 'active' if num == pedidos.page }}">
+                        <a class="page-link" href="?pagina={{ num }}{% if request.args.get('estado') %}&estado={{ request.args.get('estado') }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if pedidos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?pagina={{ pedidos.next_num }}{% if request.args.get('estado') %}&estado={{ request.args.get('estado') }}{% endif %}">
+                            Siguiente &raquo;
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No hay pedidos registrados</h5>
+                <p class="text-muted">No se encontraron pedidos con los filtros aplicados</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Cambio de estado del pedido
+document.querySelectorAll('.estado-pedido').forEach(select => {
+    select.addEventListener('change', function() {
+        const pedidoId = this.dataset.pedidoId;
+        const nuevoEstado = this.value;
+        
+        fetch(`/admin/pedidos/${pedidoId}/estado`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ estado: nuevoEstado })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Estado actualizado correctamente', 'success');
+            } else {
+                throw new Error(data.message || 'Error al actualizar');
+            }
+        })
+        .catch(error => {
+            showToast(error.message, 'error');
+            // Restaurar valor anterior
+            this.value = this._originalValue;
+        });
+        
+        // Guardar valor original
+        this._originalValue = this.value;
+    });
+});
+
+function showToast(message, type = 'success') {
+    // Implementación de toast como en ejemplos anteriores
+}
+</script>
+{% endblock %}
+{% endblock %}
