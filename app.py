@@ -717,9 +717,6 @@ def notificar_empleados(pedido):
 
 
 #modulo del cocinero
-
-
-
 @app.route('/pedido/<int:id>/completar', methods=['POST'])
 @login_required
 def completar_pedido(id):
@@ -1380,7 +1377,10 @@ def login():
         if current_user.rol == RolUsuario.ADMIN.value:
             return redirect(url_for('admin_panel'))
         elif current_user.rol == RolUsuario.EMPLEADO.value:
-            return redirect(url_for('empleado_dashboard'))
+            if current_user.tipo_empleado == 'cocinero':
+                return redirect(url_for('pantalla_cocina'))
+            else:
+                return redirect(url_for('empleado_dashboard'))
         return redirect(url_for('inicio'))
     
     form = LoginForm()
@@ -1394,7 +1394,10 @@ def login():
             if user.rol == RolUsuario.ADMIN.value:
                 return redirect(url_for('admin_panel'))
             elif user.rol == RolUsuario.EMPLEADO.value:
-                return redirect(url_for('empleado_dashboard'))
+                if user.tipo_empleado == 'cocinero':
+                    return redirect(url_for('pantalla_cocina'))
+                else:
+                    return redirect(url_for('empleado_dashboard'))
             return redirect(url_for('inicio'))
         
         flash('Credenciales incorrectas', 'danger')
@@ -1636,11 +1639,6 @@ def reportes():
     pedidos = query.order_by(Pedido.fecha.desc()).all()
     
     return render_template('admin/reportes.html', pedidos=pedidos)
-@app.route('/admin/reportes/exportar')
-@login_required
-def exportar_reportes():
-    # Lógica para exportar a Excel/PDF
-    return generar_reporte()
 
 # Modelo para configuración del sistema
 class Configuracion(db.Model):
@@ -1688,6 +1686,73 @@ def configuracion_sistema():
         return redirect(url_for('configuracion_sistema'))
 
     return render_template('admin/configuracion.html', config=config)
+
+#prueba cosina
+# Ruta para la pantalla de cocina
+@app.route('/cocina/pantalla')
+@login_required
+@tipo_empleado_requerido('cocinero')
+def pantalla_cocina():
+    return render_template('empleado/pantalla_cocina.html')
+
+# API para obtener pedidos para la cocina
+@app.route('/api/pedidos-cocina')
+@login_required
+@tipo_empleado_requerido('cocinero')
+def api_pedidos_cocina():
+    # Obtener todos los pedidos que no estén entregados
+    pedidos = Pedido.query.filter(Pedido.estado.in_(['pendiente', 'preparando', 'listo']))\
+                        .order_by(Pedido.fecha.asc()).all()
+    
+    # Formatear los datos para la API
+    pedidos_data = []
+    for pedido in pedidos:
+        pedido_data = {
+            'id': pedido.id,
+            'mesa': pedido.mesa,
+            'estado': pedido.estado,
+            'fecha': pedido.fecha.isoformat(),
+            'items': []
+        }
+        
+        for item in pedido.items:
+            pedido_data['items'].append({
+                'plato_nombre': item.plato.nombre,
+                'cantidad': item.cantidad,
+                'comentarios': item.comentarios
+            })
+            
+        pedidos_data.append(pedido_data)
+    
+    return jsonify(pedidos_data)
+
+# Ruta para cambiar el estado de un pedido
+@app.route('/pedido/<int:pedido_id>/cambiar-estado', methods=['POST'])
+@login_required
+@tipo_empleado_requerido('cocinero')
+def cambiar_estado_pedido(pedido_id):
+    pedido = Pedido.query.get_or_404(pedido_id)
+    nuevo_estado = request.json.get('estado')
+    
+    if nuevo_estado not in ['pendiente', 'preparando', 'listo', 'entregado']:
+        return jsonify({'error': 'Estado no válido'}), 400
+    
+    pedido.estado = nuevo_estado
+    db.session.commit()
+    
+    # Crear notificación si el pedido está listo
+    if nuevo_estado == 'listo':
+        notificacion = Notificacion(
+            mensaje=f"Pedido #{pedido.id} listo para servir - Mesa {pedido.mesa or 'Sin asignar'}",
+            tipo_destino='mesero',
+            pedido_id=pedido.id,
+            visto=False,
+            fecha=datetime.utcnow()
+        )
+        db.session.add(notificacion)
+        db.session.commit()
+    
+    return jsonify({'success': True, 'nuevo_estado': nuevo_estado})
 
 if __name__ == '__main__':    
     with app.app_context():

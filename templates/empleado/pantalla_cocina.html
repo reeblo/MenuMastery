@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pantalla Cocina - MenuMastery</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --color-pendiente: #ffc107;
+      --color-preparando: #17a2b8;
+      --color-listos: #28a745;
+      --color-entregado: #6c757d;
+    }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: #1a1a1a; 
+      color: white; 
+      margin: 0;
+      padding: 0;
+    }
+    
+    .header {
+      background: #212529;
+      padding: 15px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .filtros {
+      background: #2c3034;
+      padding: 10px 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .btn-filtro {
+      border: 1px solid #495057;
+      color: #dee2e6;
+      background: transparent;
+    }
+    
+    .btn-filtro.active, .btn-filtro:hover {
+      background: #495057;
+      color: white;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+    
+    .mesa {
+      background: #2c3034;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    
+    .mesa-header {
+      background: #343a40;
+      padding: 12px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .mesa-header h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: #ffcc00;
+    }
+    
+    .mesa-tiempo {
+      background: #495057;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+    
+    .pedido {
+      background: #343a40;
+      margin: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid var(--color-pendiente);
+    }
+    
+    .pedido.pendiente {
+      border-left-color: var(--color-pendiente);
+    }
+    
+    .pedido.preparando {
+      border-left-color: var(--color-preparando);
+    }
+    
+    .pedido.listos {
+      border-left-color: var(--color-listos);
+    }
+    
+    .pedido.entregado {
+      border-left-color: var(--color-entregado);
+      opacity: 0.7;
+    }
+    
+    .pedido-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .pedido-id {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    
+    .pedido-estado {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    
+    .estado-pendiente {
+      background: var(--color-pendiente);
+      color: #212529;
+    }
+    
+    .estado-preparando {
+      background: var(--color-preparando);
+      color: white;
+    }
+    
+    .estado-listo {
+      background: var(--color-listos);
+      color: white;
+    }
+    
+    .estado-entregado {
+      background: var(--color-entregado);
+      color: white;
+    }
+    
+    .pedido-items {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    
+    .pedido-items li {
+      padding: 5px 0;
+      border-bottom: 1px solid #495057;
+    }
+    
+    .pedido-items li:last-child {
+      border-bottom: none;
+    }
+    
+    .pedido-acciones {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-accion {
+      flex: 1;
+      padding: 5px;
+      font-size: 0.85rem;
+    }
+    
+    .notificacion-toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1100;
+      min-width: 250px;
+    }
+    
+    .badge-notificacion {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #dc3545;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+    
+    .sin-pedidos {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px;
+      color: #6c757d;
+    }
+    
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+      
+      .header h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><i class="fas fa-utensils"></i> Pantalla de Cocina - MenuMastery</h1>
+  </div>
+  
+  <div class="filtros">
+    <button class="btn btn-filtro active" data-estado="todos">
+      <i class="fas fa-list me-1"></i> Todos
+    </button>
+    <button class="btn btn-filtro" data-estado="pendiente">
+      <i class="fas fa-clock me-1"></i> Pendientes
+    </button>
+    <button class="btn btn-filtro" data-estado="preparando">
+      <i class="fas fa-blender me-1"></i> En preparación
+    </button>
+    <button class="btn btn-filtro" data-estado="listo">
+      <i class="fas fa-check-circle me-1"></i> Listos
+    </button>
+    <div class="ms-auto">
+      <button class="btn btn-outline-light btn-sm" id="btn-sonido">
+        <i class="fas fa-volume-up"></i> Sonido
+      </button>
+    </div>
+  </div>
+  
+  <div class="grid" id="contenedor-mesas">
+    <!-- Las mesas y pedidos se cargarán dinámicamente -->
+    <div class="sin-pedidos">
+      <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+      <h3>No hay pedidos pendientes</h3>
+      <p>Los nuevos pedidos aparecerán aquí automáticamente</p>
+    </div>
+  </div>
+  
+  <div class="notificacion-toast" id="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Variables globales
+    let estadoFiltro = 'todos';
+    let sonidoActivo = true;
+    let ultimoPedidoId = 0;
+    
+    // Elementos DOM
+    const contenedorMesas = document.getElementById('contenedor-mesas');
+    const toastContainer = document.getElementById('toast-container');
+    const btnSonido = document.getElementById('btn-sonido');
+    
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      cargarPedidos();
+      configurarEventListeners();
+      
+      // Conexión SSE para actualizaciones en tiempo real
+      const eventSource = new EventSource('/stream-pedidos');
+      eventSource.onmessage = function(e) {
+        if (e.data === 'actualizar') {
+          cargarPedidos();
+        }
+      };
+    });
+    
+    // Configurar event listeners
+    function configurarEventListeners() {
+      // Filtros
+      document.querySelectorAll('.btn-filtro').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.btn-filtro').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          estadoFiltro = this.dataset.estado;
+          cargarPedidos();
+        });
+      });
+      
+      // Toggle sonido
+      btnSonido.addEventListener('click', function() {
+        sonidoActivo = !sonidoActivo;
+        this.innerHTML = sonidoActivo ? 
+          '<i class="fas fa-volume-up"></i> Sonido' : 
+          '<i class="fas fa-volume-mute"></i> Silencio';
+        this.classList.toggle('btn-outline-light');
+        this.classList.toggle('btn-light');
+      });
+    }
+    
+    // Cargar pedidos desde el servidor
+    async function cargarPedidos() {
+      try {
+        const response = await fetch('/api/pedidos-cocina');
+        const pedidos = await response.json();
+        
+        // Verificar si hay nuevos pedidos
+        const nuevoPedido = pedidos.find(p => p.id > ultimoPedidoId);
+        if (nuevoPedido && sonidoActivo) {
+          reproducirSonido();
+          mostrarNotificacion(`Nuevo pedido #${nuevoPedido.id} para Mesa ${nuevoPedido.mesa || 'Sin asignar'}`);
+          ultimoPedidoId = Math.max(ultimoPedidoId, ...pedidos.map(p => p.id));
+        }
+        
+        renderizarPedidos(pedidos);
+      } catch (error) {
+        console.error('Error al cargar pedidos:', error);
+      }
+    }
+    
+    // Renderizar pedidos en la interfaz
+    function renderizarPedidos(pedidos) {
+      // Agrupar pedidos por mesa
+      const pedidosPorMesa = {};
+      pedidos.forEach(pedido => {
+        if (estadoFiltro !== 'todos' && pedido.estado !== estadoFiltro) return;
+        
+        const mesa = pedido.mesa || 'Sin asignar';
+        if (!pedidosPorMesa[mesa]) {
+          pedidosPorMesa[mesa] = [];
+        }
+        pedidosPorMesa[mesa].push(pedido);
+      });
+      
+      // Limpiar contenedor
+      contenedorMesas.innerHTML = '';
+      
+      // Mostrar mensaje si no hay pedidos
+      if (Object.keys(pedidosPorMesa).length === 0) {
+        contenedorMesas.innerHTML = `
+          <div class="sin-pedidos">
+            <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+            <h3>No hay pedidos ${estadoFiltro !== 'todos' ? estadoFiltro : ''}</h3>
+            <p>Los nuevos pedidos aparecerán aquí automáticamente</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Renderizar cada mesa con sus pedidos
+      for (const mesa in pedidosPorMesa) {
+        const mesaDiv = document.createElement('div');
+        mesaDiv.className = 'mesa';
+        
+        // Ordenar pedidos por fecha (más antiguos primero)
+        const pedidosMesa = pedidosPorMesa[mesa].sort((a, b) => 
+          new Date(a.fecha) - new Date(b.fecha)
+        );
+        
+        mesaDiv.innerHTML = `
+          <div class="mesa-header">
+            <h2>Mesa ${mesa}</h2>
+            <span class="mesa-tiempo">${pedidosMesa.length} pedido(s)</span>
+          </div>
+        `;
+        
+        // Añadir cada pedido de la mesa
+        pedidosMesa.forEach(pedido => {
+          const tiempoTranscurrido = calcularTiempoTranscurrido(pedido.fecha);
+          const pedidoDiv = document.createElement('div');
+          pedidoDiv.className = `pedido ${pedido.estado}`;
+          pedidoDiv.innerHTML = `
+            <div class="pedido-header">
+              <span class="pedido-id">#${pedido.id}</span>
+              <span class="pedido-estado estado-${pedido.estado}">${obtenerTextoEstado(pedido.estado)}</span>
+            </div>
+            <div class="pedido-tiempo">
+              <small>Hace ${tiempoTranscurrido}</small>
+            </div>
+            <ul class="pedido-items">
+              ${pedido.items.map(item => `
+                <li>${item.cantidad}x ${item.plato_nombre}</li>
+              `).join('')}
+            </ul>
+            <div class="pedido-acciones">
+              ${pedido.estado === 'pendiente' ? `
+                <button class="btn btn-warning btn-accion" onclick="cambiarEstadoPedido(${pedido.id}, 'preparando')">
+                  <i class="fas fa-blender me-1"></i> Preparar
+                </button>
+              ` : ''}
+              ${pedido.estado === 'preparando' ? `
+                <button class="btn btn-success btn-accion" onclick="cambiarEstadoPedido(${pedido.id}, 'listo')">
+                  <i class="fas fa-check me-1"></i> Listo
+                </button>
+              ` : ''}
+              ${pedido.estado === 'listo' ? `
+                <button class="btn btn-info btn-accion" onclick="cambiarEstadoPedido(${pedido.id}, 'entregado')">
+                  <i class="fas fa-truck me-1"></i> Entregado
+                </button>
+              ` : ''}
+            </div>
+          `;
+          
+          mesaDiv.appendChild(pedidoDiv);
+        });
+        
+        contenedorMesas.appendChild(mesaDiv);
+      }
+    }
+    
+    // Cambiar estado de un pedido
+    async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
+      try {
+        const response = await fetch(`/pedido/${pedidoId}/cambiar-estado`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ estado: nuevoEstado })
+        });
+        
+        if (response.ok) {
+          cargarPedidos(); // Recargar la lista
+        } else {
+          alert('Error al cambiar el estado del pedido');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cambiar el estado del pedido');
+      }
+    }
+    
+    // Utilidades
+    function calcularTiempoTranscurrido(fecha) {
+      const ahora = new Date();
+      const fechaPedido = new Date(fecha);
+      const diffMs = ahora - fechaPedido;
+      const diffMins = Math.floor(diffMs / 60000);
+      
+      if (diffMins < 1) return 'menos de 1 min';
+      if (diffMins < 60) return `${diffMins} min`;
+      
+      const diffHours = Math.floor(diffMins / 60);
+      return `${diffHours} h`;
+    }
+    
+    function obtenerTextoEstado(estado) {
+      const estados = {
+        'pendiente': 'Pendiente',
+        'preparando': 'Preparando',
+        'listo': 'Listo',
+        'entregado': 'Entregado'
+      };
+      return estados[estado] || estado;
+    }
+    
+    function reproducirSonido() {
+      const audio = new Audio('/static/sounds/notification.mp3');
+      audio.play().catch(e => console.log('No se pudo reproducir sonido:', e));
+    }
+    
+    function mostrarNotificacion(mensaje, tipo = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast show align-items-center text-white bg-${tipo} border-0`;
+      toast.role = 'alert';
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      toast.style.marginBottom = '10px';
+    
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fas fa-bell me-2"></i> ${mensaje}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+    
+      toastContainer.appendChild(toast);
+    
+      // Auto-eliminar después de 5 segundos
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

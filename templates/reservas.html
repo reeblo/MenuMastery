@@ -84,26 +84,4 @@
         </div>
     </div>
 </section>
-
-<script>
-// Actualización en tiempo real de reservas
-const eventSourceReservas = new EventSource('/stream-reservas');
-eventSourceReservas.onmessage = function(e) {
-    if (e.data === 'actualizar') {
-        location.reload();
-    }
-};
-
-// Manejo del modal para asignar mesas
-document.querySelectorAll('.btn-asignar-mesa').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const reservaId = this.dataset.id;
-        const form = document.getElementById('formAsignarMesa');
-        form.action = `/reserva/${reservaId}/asignar-mesa`;
-        
-        const modal = new bootstrap.Modal(document.getElementById('modalAsignarMesa'));
-        modal.show();
-    });
-});
-</script>
 {% endblock %}
