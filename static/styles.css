@@ -1446,4 +1446,425 @@ footer {
   margin: 0 0.5rem;
 }
 
+
+
+
+
+/*estilos modulo de administracion*/
+/* Variables CSS */
+:root {
+  --sidebar-width: 280px;
+  --sidebar-bg: #5a92ca;
+  --sidebar-color: #60bcdb;
+  --topbar-bg: #ffffff;
+  --topbar-height: 70px;
+  --content-bg: #f5f7fa;
+  --primary-color: #3498db;
+  --hover-color: #2980b9;
+  --active-color: #1abc9c;
+  --danger-color: #e74c3c;
+  --success-color: #2ecc71;
+  --warning-color: #4d98c0;
+  --info-color: #3498db;
+  --shadow: 0 2px 10px #0000001a;
+  --gray-light: #000000;
+  --gray-dark: #68b9b9;
+}
+
+/* Ajuste solo para el módulo de administración */
+body.admin {
+  padding-top: 0; /* Elimina el espacio superior */
+  margin-top: 0;
+}
+
+
+/* Estructura Base */
+.admin-container {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 100vh;
+  background-color: var(--content-bg);
+}
+
+/* Header */
+.admin-header {
+  grid-column: 2;
+  background-color: var(--topbar-bg);
+  height: var(--topbar-height);
+  padding: 0 25px;
+  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.admin-header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--sidebar-bg);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-info p {
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Sidebar */
+.admin-sidebar {
+  grid-row: 1 / span 2;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-color);
+  position: fixed;
+  height: 100vh;
+  width: var(--sidebar-width);
+  transition: all 0.3s;
+}
+
+.admin-sidebar ul {
+  list-style: none;
+  padding: 20px 0;
+  margin: 0;
+}
+
+.admin-sidebar li {
+  margin: 5px 15px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.admin-sidebar li a {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.3s;
+  font-size: 0.95rem;
+  border-left: 3px solid transparent;
+}
+
+.admin-sidebar li a:hover {
+  background-color: rgba(3, 3, 3, 0.1);
+  color: white;
+}
+
+.admin-sidebar li a i {
+  margin-right: 10px;
+  width: 20px;
+  text-align: center;
+}
+
+.admin-sidebar li.active a {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left: 3px solid var(--active-color);
+  color: white;
+}
+
+/* Contenido Principal */
+.admin-main {
+  grid-column: 2;
+  padding: 25px;
+  min-height: calc(100vh - var(--topbar-height));
+}
+
+.content-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Cards */
+.card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  border: none;
+}
+
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid #eee;
+  padding: 15px 20px;
+  font-weight: 600;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* Tablas - Estilos mejorados */
+.table {
+  width: 100%;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border-collapse: collapse; /* Asegura bordes consistentes */
+  table-layout: auto; /* Permite que las columnas se ajusten al contenido */
+}
+
+.table thead th {
+  background-color: rgb(116, 162, 231);
+  border-bottom: 2px solid #eee;
+  padding: 15px;
+  text-align: left;
+  position: sticky;
+  top: 0; /* Fija los encabezados al hacer scroll */
+  white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+}
+
+.table tbody td {
+  padding: 12px 15px;
+  border-top: 1px solid #eee;
+  vertical-align: middle; /* Alinea el contenido verticalmente */
+  word-break: break-word; /* Rompe palabras largas para evitar desbordamiento */
+}
+
+.table tbody tr:hover td {
+  background-color: #f8f9fa;
+}
+
+.table-responsive {
+  overflow-x: auto; /* Permite scroll horizontal en dispositivos pequeños */
+  -webkit-overflow-scrolling: touch; /* Mejora el scroll en dispositivos móviles */
+}
+
+/* Estilos específicos para el área de reportes */
+.report-area .table {
+  min-width: 100%; /* Asegura que la tabla ocupe todo el ancho disponible */
+}
+
+.report-area .table th,
+.report-area .table td {
+  min-width: 120px; /* Ancho mínimo para cada celda */
+}
+
+/* Para tablas con muchas columnas */
+.table-many-columns {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Ajustes para contenido específico en celdas */
+.table td.numeric {
+  text-align: right; /* Alinea números a la derecha */
+  font-family: monospace; /* Mejor legibilidad para números */
+}
+
+.table td.compact {
+  padding: 8px 12px; /* Espaciado más compacto */
+}
+
+/* Zebra striping para mejor legibilidad */
+.table-striped tbody tr:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Botón de cerrar sesión en el header */
+.admin-header .btn-outline-light {
+    color: var(--sidebar-bg) !important; /* Color azul del sidebar */
+    border-color: var(--sidebar-bg) !important;
+}
+
+.admin-header .btn-outline-light:hover {
+    background-color: var(--sidebar-bg) !important;
+    color: white !important;
+}
+
+/* Media queries para tablas en dispositivos pequeños */
+@media (max-width: 768px) {
+  .table thead {
+    display: none; /* Oculta encabezados en móviles */
+  }
+  
+  .table, .table tbody, .table tr, .table td {
+    display: block;
+    width: 100%;
+  }
+  
+  .table tr {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #eee;
+  }
+  
+  .table td {
+    text-align: right;
+    padding-left: 50%;
+    position: relative;
+    border-top: 1px solid #eee;
+  }
+  
+  .table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 15px;
+    width: 45%;
+    padding-right: 10px;
+    font-weight: bold;
+    text-align: left;
+  }
+}
+
+/* Formularios */
+.form-label {
+  font-weight: 500;
+  color: var(--sidebar-bg);
+}
+
+.form-control, .form-select {
+  border-radius: 4px;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+}
+
+.is-invalid {
+  border-color: var(--danger-color);
+}
+
+.is-invalid:focus {
+  box-shadow: 0 0 0 0.25rem rgba(231, 76, 60, 0.25);
+}
+
+.invalid-feedback {
+  color: var(--danger-color);
+  font-size: 0.85rem;
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+}
+
+/* Botones */
+.btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: var(--hover-color);
+  border-color: var(--hover-color);
+}
+
+.btn-outline-secondary {
+  border-color: var(--gray-light);
+  color: var(--gray-dark);
+}
+
+.btn-outline-secondary:hover {
+  background-color: #f8f9fa;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.875rem;
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: white;
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+  color: white;
+}
+
+/* Badges */
+.badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge.bg-success {
+  background-color: var(--success-color) !important;
+}
+
+.badge.bg-secondary {
+  background-color: var(--gray-light) !important;
+}
+
+/* Imágenes */
+.img-thumbnail {
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  padding: 2px;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .admin-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-sidebar {
+    position: fixed;
+    left: -100%;
+    z-index: 1000;
+    width: 280px;
+    height: 100vh;
+    transition: left 0.3s;
+  }
+  
+  .admin-sidebar.active {
+    left: 0;
+  }
+  
+  .admin-header,
+  .admin-main {
+    grid-column: 1;
+  }
+  
+  .menu-toggle {
+    display: block !important;
+    background: none;
+    border: none;
+    color: var(--sidebar-bg);
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
   
