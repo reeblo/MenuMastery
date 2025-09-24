@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -56,8 +56,8 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])  
-    password = PasswordField('ContraseÃ±a', validators=[DataRequired()])
-    submit = SubmitField('Iniciar sesiÃ³n')
+    password = PasswordField('Contraseña', validators=[DataRequired()])
+    submit = SubmitField('Iniciar sesión')
 
 class RolUsuario(Enum):
     ADMIN = 'admin'
@@ -79,22 +79,22 @@ class RegistroForm(FlaskForm):
     nombre = StringField('Nombre completo', validators=[DataRequired()])
     email = StringField('Email', validators=[
         DataRequired(),
-        Email(message='Ingresa un email vÃ¡lido')
+        Email(message='Ingresa un email válido')
     ])
     confirm_email = StringField('Confirmar Email', validators=[
         DataRequired(),
         EqualTo('email', message='Los emails deben coincidir')
     ])
-    password = PasswordField('ContraseÃ±a', validators=[
+    password = PasswordField('Contraseña', validators=[
         DataRequired(),
-        Length(min=8, message='La contraseÃ±a debe tener al menos 8 caracteres')
+        Length(min=8, message='La contraseña debe tener al menos 8 caracteres')
     ])
-    confirm_password = PasswordField('Confirmar ContraseÃ±a', validators=[
+    confirm_password = PasswordField('Confirmar Contraseña', validators=[
         DataRequired(),
-        EqualTo('password', message='Las contraseÃ±as deben coincidir')
+        EqualTo('password', message='Las contraseñas deben coincidir')
     ])
-    terms = BooleanField('Acepto los tÃ©rminos', validators=[
-        DataRequired(message='Debes aceptar los tÃ©rminos y condiciones')
+    terms = BooleanField('Acepto los términos', validators=[
+        DataRequired(message='Debes aceptar los términos y condiciones')
     ])
     submit = SubmitField('Registrarse')
 
@@ -109,7 +109,7 @@ class ReservaForm(FlaskForm):
         ('19:00', '7:00 PM'),
         ('20:00', '8:00 PM')
     ], validators=[DataRequired()])
-    personas = SelectField('NÃºmero de personas', choices=[
+    personas = SelectField('Número de personas', choices=[
         (1, '1 persona'),
         (2, '2 personas'),
         (3, '3 personas'),
@@ -141,12 +141,12 @@ class Categoria(db.Model):
 
 class PlatoForm(FlaskForm):
     nombre = StringField('Nombre', validators=[DataRequired()])
-    descripcion = TextAreaField('DescripciÃ³n')
+    descripcion = TextAreaField('Descripción')
     precio = IntegerField('Precio', validators=[DataRequired()])
     stock = IntegerField('Stock disponible', validators=[DataRequired()])
-    stock_minimo = IntegerField('Stock mÃ­nimo', validators=[DataRequired()])
-    destacado = SelectField('Destacado', choices=[(False, 'No'), (True, 'SÃ­')], coerce=bool)
-    categoria_id = SelectField('CategorÃ­a', coerce=int, validators=[DataRequired()])
+    stock_minimo = IntegerField('Stock mínimo', validators=[DataRequired()])
+    destacado = SelectField('Destacado', choices=[(False, 'No'), (True, 'Sí')], coerce=bool)
+    categoria_id = SelectField('Categoría', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Guardar Plato')
 
 class Plato(db.Model):
@@ -251,7 +251,7 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Decorador para verificar sesiÃ³n de cliente
+# Decorador para verificar sesión de cliente
 def login_cliente_requerido(f):
     @wraps(f)
     def decorador(*args, **kwargs):
@@ -310,7 +310,7 @@ def admin_panel():
         flash('Acceso no autorizado', 'danger')
         return redirect(url_for('inicio'))
     
-    # Agregar estadÃ­sticas
+    # Agregar estadísticas
     total_usuarios = Usuario.query.count()
     pedidos_hoy = Pedido.query.filter(Pedido.fecha >= datetime.today().date()).count()
     productos_inventario = Plato.query.count()
@@ -334,15 +334,15 @@ def agregar_plato():
     
     if form.validate_on_submit():
         try:
-            # Verificar si se subiÃ³ una imagen
+            # Verificar si se subió una imagen
             if 'imagen' not in request.files:
-                flash('No se ha seleccionado ningÃºn archivo de imagen', 'danger')
+                flash('No se ha seleccionado ningún archivo de imagen', 'danger')
                 return redirect(url_for('agregar_plato'))
             
             imagen = request.files['imagen']
             
             if imagen.filename == '':
-                flash('No se ha seleccionado ningÃºn archivo', 'danger')
+                flash('No se ha seleccionado ningún archivo', 'danger')
                 return redirect(url_for('agregar_plato'))
             
             if not allowed_file(imagen.filename):
@@ -393,7 +393,7 @@ def editar_plato(id):
     
     if form.validate_on_submit():
         try:
-            # Procesar imagen si se subiÃ³ una nueva
+            # Procesar imagen si se subió una nueva
             imagen = request.files.get('imagen')
             if imagen and imagen.filename != '':
                 if allowed_file(imagen.filename):
@@ -513,10 +513,10 @@ def rol_requerido(rol_necesario):
         @wraps(func)
         def envoltura(*args, **kwargs):
             if not current_user.is_authenticated:
-                flash("Debes iniciar sesiÃ³n para acceder a esta pÃ¡gina.", "warning")
+                flash("Debes iniciar sesión para acceder a esta página.", "warning")
                 return redirect(url_for('login'))
             if current_user.rol != rol_necesario:
-                flash("No tienes permiso para acceder a esta secciÃ³n.", "danger")
+                flash("No tienes permiso para acceder a esta sección.", "danger")
                 return redirect(url_for('index'))
             return func(*args, **kwargs)
         return envoltura
@@ -532,14 +532,14 @@ def tipo_empleado_requerido(*tipos_permitidos):
                 flash('Acceso no autorizado', 'danger')
                 return redirect(url_for('inicio'))
             if current_user.tipo_empleado not in tipos_permitidos:
-                flash('No tienes permiso para acceder a esta secciÃ³n', 'danger')
+                flash('No tienes permiso para acceder a esta sección', 'danger')
                 return redirect(url_for('empleado_dashboard'))
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
 # Dashboard principal de empleados
-# MÃ³dulo unificado de empleados
+# Módulo unificado de empleados
 @app.route('/empleado/dashboard')
 @login_required
 @rol_requerido(RolUsuario.EMPLEADO.value)
@@ -580,10 +580,10 @@ def empleado_dashboard():
                             notificaciones_no_vistas=notificaciones_no_vistas,
                             notificaciones_recientes=notificaciones_recientes)
     
-    flash('Tu cuenta de empleado no estÃ¡ configurada correctamente', 'warning')
+    flash('Tu cuenta de empleado no está configurada correctamente', 'warning')
     return redirect(url_for('inicio'))
 
-# MÃ³dulo de pedidos unificado
+# Módulo de pedidos unificado
 @app.route('/empleado/pedidos')
 @login_required
 @rol_requerido(RolUsuario.EMPLEADO.value)
@@ -607,12 +607,12 @@ def empleado_pedidos():
     
     return render_template(plantilla, pedidos=pedidos)
 
-# MÃ³dulo de disponibilidad (solo cocineros)
+# Módulo de disponibilidad (solo cocineros)
 @app.route('/empleado/disponibilidad')
 @login_required
 @tipo_empleado_requerido('cocinero')
 def control_disponibilidad():
-    # Filtrar segÃºn parÃ¡metro de URL
+    # Filtrar según parámetro de URL
     filtro = request.args.get('filtro')
     
     if filtro == 'agotados':
@@ -627,7 +627,7 @@ def control_disponibilidad():
                         platos_agotados_count=platos_agotados_count,
                         filtro_actual=filtro)
 
-# MÃ³dulo de reservas (solo meseros)
+# Módulo de reservas (solo meseros)
 @app.route('/empleado/reservas')
 @login_required
 @tipo_empleado_requerido('mesero')
@@ -642,7 +642,7 @@ def empleado_reservas():
         Reserva.estado.asc()
     ).all()
     
-    # EstadÃ­sticas para el dashboard
+    # Estadísticas para el dashboard
     reservas_hoy = Reserva.query.filter(
         db.func.date(Reserva.fecha) == hoy
     ).count()
@@ -668,7 +668,7 @@ def marcar_como_completada(id):
     reserva.estado = 'completada'
     db.session.commit()
     
-    # Crear notificaciÃ³n
+    # Crear notificación
     notificacion = Notificacion(
         mensaje=f"Reserva #{reserva.id} completada - Mesa {reserva.mesa}",
         tipo_destino='mesero',
@@ -747,7 +747,7 @@ def cambiar_estado_plato(id):
         plato.agotado = nuevo_estado
         db.session.commit()
         
-        # Crear notificaciÃ³n de cambio de estado
+        # Crear notificación de cambio de estado
         estado = "agotado" if nuevo_estado else "disponible"
         mensaje = f"El plato {plato.nombre} ha sido marcado como {estado}"
         
@@ -769,7 +769,7 @@ def cambiar_estado_plato(id):
         flash(f'Error al actualizar el estado del plato: {str(e)}', 'danger')
         return redirect(url_for('control_disponibilidad'))
 
-# MÃ³dulo del mesero - Reservas
+# Módulo del mesero - Reservas
 
 
 
@@ -801,7 +801,7 @@ def asignar_mesa(id):
     mesa = request.form.get('mesa')
     
     if not mesa:
-        flash('Debe especificar un nÃºmero de mesa', 'danger')
+        flash('Debe especificar un número de mesa', 'danger')
         return redirect(url_for('empleado_reservas'))
     
     reserva.mesa = mesa
@@ -872,7 +872,7 @@ def notificaciones_mesero():
         visto=False
     ).count()
     
-    # Obtener Ãºltima notificaciÃ³n no vista
+    # Obtener última notificación no vista
     last_notification = Notificacion.query.filter_by(
         rol_destino='MESERO',
         visto=False
@@ -890,7 +890,7 @@ def pedidos_mesero_count():
     count = Pedido.query.filter_by(estado='listo').count()
     return jsonify({'count': count})
 
-# EnrutaciÃ³n inicial
+# Enrutación inicial
 @app.route('/')
 def inicio():
     return render_template('index.html')
@@ -903,10 +903,10 @@ def ping_session():
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
 
-#modulo de reseÃ±as
+#modulo de reseñas
 @app.route('/enviar-resena', methods=['POST'])
 def enviar_resena():
-    # CÃ³digo para guardar la reseÃ±a
+    # Código para guardar la reseña
     return redirect(url_for('mis_reservas'))  # o a donde quieras redirigir
 
 #modulo de perfil
@@ -932,15 +932,54 @@ def actualizar_perfil():
             current_user.foto = filename
         else:
             flash('Formato de imagen no permitido', 'danger')
+    # Restringir a meseros (ajusta si manejas roles de otra forma)
+    if getattr(current_user, 'tipo_empleado', None) != 'mesero':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    form = ReservaForm()
+    
+    if form.validate_on_submit():
+        try:
+            fecha_reserva = datetime.strptime(
+                f"{form.fecha.data} {form.hora.data}", 
+                "%Y-%m-%d %H:%M"
+            )
+            
+            # Verificar disponibilidad de mesa
+            mesa_reservada = None
+            if form.mesa.data:
+                reserva_existente = Reserva.query.filter(
+                    Reserva.fecha == fecha_reserva,
+                    Reserva.mesa == form.mesa.data,
+                    Reserva.estado != 'cancelada'
+                ).first()
+                
+                if reserva_existente:
+                    flash(f'La mesa {form.mesa.data}ya está reservada para esa hora', 'warning')
+                    return redirect(url_for('empleado_reservas'))
+            
+            nueva_reserva = Reserva(
+                fecha=fecha_reserva,
+                personas=form.personas.data,
+                mesa=form.mesa.data if form.mesa.data else None,
+                comentarios=form.comentarios.data,
+                usuario_id=current_user.id,
+                estado='pendiente'
+            )
+            
+            db.session.add(nueva_reserva)
+            db.session.commit()
+            
+            flash('Reserva realizada con éxito!', 'success')
+            return redirect(url_for('mis_reservas'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al procesar la reserva: {str(e)}', 'danger')
+    
+    return render_template('reservas.html', form=form)
 
-    try:
-        db.session.commit()
-        flash('Perfil actualizado correctamente', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error al actualizar el perfil: {str(e)}', 'danger')
-
-    return redirect(url_for('perfil'))#modulo de contacto
+#modulo de contacto
 @app.route('/contacto', methods=['GET', 'POST'], endpoint='contacto')
 def contacto():
     resenas = Resena.query.filter_by(aprobado=True).order_by(Resena.fecha.desc()).limit(5).all()
@@ -951,18 +990,18 @@ def contacto():
                 nueva_resena = Resena(
                     calificacion=int(request.form['rating']),
                     comentario=request.form['comentario'],
-                    nombre=request.form.get('nombre', 'AnÃ³nimo'),
+                    nombre=request.form.get('nombre', 'Anónimo'),
                     aprobado=False
                 )
                 db.session.add(nueva_resena)
                 db.session.commit()
-                flash('Gracias por tu reseÃ±a! SerÃ¡ publicada despuÃ©s de ser aprobada.', 'success')
+                flash('Gracias por tu reseña! Será publicada después de ser aprobada.', 'success')
             except Exception as e:
                 db.session.rollback()
-                flash(f'Error al enviar la reseÃ±a: {str(e)}', 'danger')
+                flash(f'Error al enviar la reseña: {str(e)}', 'danger')
         
         elif 'enviar_contacto' in request.form:  # Formulario de contacto
-            flash('Mensaje enviado con Ã©xito. Nos pondremos en contacto pronto!', 'success')
+            flash('Mensaje enviado con éxito. Nos pondremos en contacto pronto!', 'success')
         
         return redirect(url_for('contacto'))
     
@@ -1001,9 +1040,9 @@ def carrito():
         }
         items_data.append(item_data)
     
-    # CÃ¡lculo de totales
+    # Cálculo de totales
     subtotal = sum(item['plato']['precio'] * item['cantidad'] for item in items_data)
-    envio = 2000  # Costo fijo de envÃ­o
+    envio = 2000  # Costo fijo de envío
     total = subtotal + envio
 
     return render_template('carrocompras.html',
@@ -1018,7 +1057,7 @@ def agregar_al_carrito(plato_id):
     plato = Plato.query.get_or_404(plato_id)
     
     try:
-        # Verificar si el plato ya estÃ¡ en el carrito
+        # Verificar si el plato ya está en el carrito
         item_existente = CarritoItem.query.filter_by(
             usuario_id=current_user.id,
             plato_id=plato_id
@@ -1094,10 +1133,10 @@ def eliminar_del_carrito(item_id):
     try:
         db.session.delete(item)
         db.session.commit()
-        flash('Ãtem eliminado del carrito', 'success')
+        flash('Ítem eliminado del carrito', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error al eliminar Ã­tem', 'danger')
+        flash('Error al eliminar ítem', 'danger')
     
     return redirect(url_for('carrito'))
 
@@ -1107,14 +1146,14 @@ def confirmar_pedido():
     items_carrito = CarritoItem.query.filter_by(usuario_id=current_user.id).all()
 
     if not items_carrito:
-        flash('Tu carrito estÃ¡ vacÃ­o', 'warning')
+        flash('Tu carrito está vacío', 'warning')
         return redirect(url_for('carrito'))
 
     try:
         in_restaurant = request.form.get('in_restaurant') == 'True'
 
         if not in_restaurant:
-            flash('PrÃ³ximamente domicilios. Tu pedido no ha sido procesado.', 'info')
+            flash('Próximamente domicilios. Tu pedido no ha sido procesado.', 'info')
             return redirect(url_for('carrito'))
 
         mesa = request.form.get('mesa')
@@ -1147,7 +1186,7 @@ def confirmar_pedido():
             db.session.add(pedido_item)
             db.session.delete(item)
 
-        # Crear notificaciones mÃ¡s detalladas
+        # Crear notificaciones más detalladas
         mensaje_cocinero = f"Nuevo pedido #{nuevo_pedido.id} - {len(items_carrito)} platos - Mesa: {mesa or 'Sin asignar'}"
         mensaje_mesero = f"Pedido #{nuevo_pedido.id} listo para preparar - Mesa: {mesa or 'Sin asignar'}"
 
@@ -1170,7 +1209,7 @@ def confirmar_pedido():
         db.session.add_all([noti_cocinero, noti_mesero])
         db.session.commit()
 
-        flash('Pedido confirmado con Ã©xito!', 'success')
+        flash('Pedido confirmado con éxito!', 'success')
         return redirect(url_for('historial_compras'))
 
     except Exception as e:
@@ -1212,13 +1251,13 @@ def procesar_pedido():
     items = CarritoItem.query.filter_by(usuario_id=current_user.id).all()
     
     if not items:
-        flash('Tu carrito estÃ¡ vacÃ­o', 'warning')
+        flash('Tu carrito está vacío', 'warning')
         return redirect(url_for('carrito'))
     
     try:
         # Calcular totales
         subtotal = sum(item.plato.precio * item.cantidad for item in items)
-        envio = 2000  # Costo fijo de envÃ­o
+        envio = 2000  # Costo fijo de envío
         total = subtotal + envio
 
         # Crear pedido
@@ -1248,7 +1287,7 @@ def procesar_pedido():
         if request.form.get('payment_type') == 'online':
             return iniciar_pago_online(nuevo_pedido)
         else:
-            flash('Pedido realizado con Ã©xito!', 'success')
+            flash('Pedido realizado con éxito!', 'success')
             return redirect(url_for('historial_compras'))
 
     except Exception as e:
@@ -1258,7 +1297,7 @@ def procesar_pedido():
 
 #perfil de usuario.
 
-# modulo de login/Rutas de autenticaciÃ³n
+# modulo de login/Rutas de autenticación
 #registro 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -1267,7 +1306,7 @@ def registro():
     if form.validate_on_submit():
         # Verificar si el email ya existe
         if Usuario.query.filter_by(email=form.email.data).first():
-            flash('Este correo ya estÃ¡ registrado', 'danger')
+            flash('Este correo ya está registrado', 'danger')
             return redirect(url_for('registro'))
         
         try:
@@ -1281,7 +1320,7 @@ def registro():
             db.session.add(nuevo_usuario)
             db.session.commit()
             
-            flash('Registro exitoso! Por favor inicia sesiÃ³n', 'success')
+            flash('Registro exitoso! Por favor inicia sesión', 'success')
             return redirect(url_for('login'))
         
         except Exception as e:
@@ -1329,7 +1368,7 @@ def login():
 def logout():
     logout_user()
     session.clear()
-    flash('Has cerrado sesiÃ³n exitosamente.', 'info')
+    flash('Has cerrado sesión exitosamente.', 'info')
     return redirect(url_for('inicio'))
 
 # Rutas de usuario
@@ -1337,7 +1376,7 @@ def logout():
 @login_required
 def mis_reservas():
     if 'user_id' not in session:
-        flash('Por favor inicia sesiÃ³n para ver tus reservas', 'info')
+        flash('Por favor inicia sesión para ver tus reservas', 'info')
         return redirect(url_for('login'))
     
     reservas = Reserva.query.filter_by(usuario_id=session['user_id']).order_by(Reserva.fecha.desc()).all()
@@ -1415,7 +1454,7 @@ def detalle_pedido(pedido_id):
 def entregar_pedido(id):
     pedido = Pedido.query.get_or_404(id)
 
-    # AquÃ­ puedes aplicar lÃ³gica de control de acceso si quieres limitar quiÃ©n puede entregar
+    # Aquí puedes aplicar lógica de control de acceso si quieres limitar quién puede entregar
     # Ejemplo: solo cocineros o administradores
 
     pedido.estado = 'entregado'  # o el valor que manejes en tu app
@@ -1439,7 +1478,7 @@ def gestion_inventario():
     else:
         platos = Plato.query.order_by(Plato.nombre).all()
     
-    # EstadÃ­sticas para el dashboard
+    # Estadísticas para el dashboard
     total_platos = Plato.query.count()
     platos_agotados = Plato.query.filter(Plato.stock <= 0).count()
     platos_bajo_stock = Plato.query.filter(Plato.stock <= Plato.stock_minimo).count()
@@ -1506,7 +1545,7 @@ def historial_inventario():
     movimientos = MovimientoInventario.query.order_by(MovimientoInventario.fecha.desc()).all()
     return render_template('admin/historial_inventario.html', movimientos=movimientos)
 
-# AÃ±adir a app.py
+# Añadir a app.py
 @app.route('/admin/usuarios')
 @login_required
 def gestion_usuarios():
@@ -1521,13 +1560,13 @@ def gestion_usuarios():
 @login_required
 def editar_usuario(id):
     usuario = Usuario.query.get_or_404(id)
-    # Implementar lÃ³gica de ediciÃ³n
+    # Implementar lógica de edición
     return render_template('admin/editar_usuario.html', usuario=usuario)
 
 @app.route('/admin/usuarios/eliminar/<int:id>', methods=['POST'])
 @login_required
 def eliminar_usuario(id):
-    # Implementar lÃ³gica de eliminaciÃ³n segura
+    # Implementar lógica de eliminación segura
     return redirect(url_for('gestion_usuarios'))
 
 @app.route('/admin/reportes')
@@ -1566,7 +1605,7 @@ def reportes():
     
     return render_template('admin/reportes.html', pedidos=pedidos)
 
-# Modelo para configuraciÃ³n del sistema
+# Modelo para configuración del sistema
 class Configuracion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     site_name = db.Column(db.String(100), default="Mi Plataforma")
@@ -1574,7 +1613,7 @@ class Configuracion(db.Model):
     theme_color = db.Column(db.String(7), default="#3498db")
     maintenance_mode = db.Column(db.Boolean, default=False)
 
-# FunciÃ³n para obtener la configuraciÃ³n actual (singleton)
+# Función para obtener la configuración actual (singleton)
 def get_configuracion():
     config = Configuracion.query.first()
     if not config:
@@ -1583,7 +1622,7 @@ def get_configuracion():
         db.session.commit()
     return config
 
-# Context processor para pasar la configuraciÃ³n a todas las plantillas
+# Context processor para pasar la configuración a todas las plantillas
 @app.context_processor
 def inject_config():
     config = get_configuracion()
@@ -1608,7 +1647,7 @@ def configuracion_sistema():
         config.theme_color = request.form.get('themeColor', config.theme_color)
         config.maintenance_mode = request.form.get('maintenanceMode') == 'on'
         db.session.commit()
-        flash('ConfiguraciÃ³n actualizada correctamente', 'success')
+        flash('Configuración actualizada correctamente', 'success')
         return redirect(url_for('configuracion_sistema'))
 
     return render_template('admin/configuracion.html', config=config)
@@ -1626,7 +1665,7 @@ def pantalla_cocina():
 @login_required
 @tipo_empleado_requerido('cocinero')
 def api_pedidos_cocina():
-    # Obtener todos los pedidos que no estÃ©n entregados
+    # Obtener todos los pedidos que no estén entregados
     pedidos = Pedido.query.filter(Pedido.estado.in_(['pendiente', 'preparando', 'listo']))\
                         .order_by(Pedido.fecha.asc()).all()
     
@@ -1661,12 +1700,12 @@ def cambiar_estado_pedido(pedido_id):
     nuevo_estado = request.json.get('estado')
     
     if nuevo_estado not in ['pendiente', 'preparando', 'listo', 'entregado']:
-        return jsonify({'error': 'Estado no vÃ¡lido'}), 400
+        return jsonify({'error': 'Estado no válido'}), 400
     
     pedido.estado = nuevo_estado
     db.session.commit()
     
-    # Crear notificaciÃ³n si el pedido estÃ¡ listo
+    # Crear notificación si el pedido está listo
     if nuevo_estado == 'listo':
         notificacion = Notificacion(
             mensaje=f"Pedido #{pedido.id} listo para servir - Mesa {pedido.mesa or 'Sin asignar'}",
@@ -1680,84 +1719,9 @@ def cambiar_estado_pedido(pedido_id):
     
     return jsonify({'success': True, 'nuevo_estado': nuevo_estado})
 
-# Public routes added by fix
-@app.route('/menu', endpoint='menu')
-def menu():
-    categorias = Categoria.query.options(db.joinedload(Categoria.platos)).all()
-    return render_template('menu.html', menu=categorias)
-
-@app.route('/reservas', methods=['GET', 'POST'])
-@login_required
-def reservas():
-    form = ReservaForm()
-    if form.validate_on_submit():
-        try:
-            fecha_reserva = datetime.strptime(f"{form.fecha.data} {form.hora.data}", "%Y-%m-%d %H:%M")
-            if form.mesa.data:
-                reserva_existente = Reserva.query.filter(
-                    Reserva.fecha == fecha_reserva,
-                    Reserva.mesa == form.mesa.data,
-                    Reserva.estado != 'cancelada'
-                ).first()
-                if reserva_existente:
-                    flash(f"La mesa {form.mesa.data} ya está reservada para esa hora", 'warning')
-                    return redirect(url_for('reservas'))
-            nueva_reserva = Reserva(
-                fecha=fecha_reserva,
-                personas=int(form.personas.data),
-                mesa=form.mesa.data if form.mesa.data else None,
-                comentarios=form.comentarios.data,
-                usuario_id=current_user.id,
-                estado='pendiente'
-            )
-            db.session.add(nueva_reserva)
-            db.session.commit()
-            flash('Reserva realizada con éxito!', 'success')
-            return redirect(url_for('mis_reservas'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error al procesar la reserva: {str(e)}', 'danger')
-    return render_template('reservas.html', form=form)
-
-# Serve user profile images
-@app.route('/user_images/<path:filename>', endpoint='serve_user_image')
-def serve_user_image(filename):
-    try:
-        directory = app.config['UPLOAD_FOLDER_USERS']
-        return send_from_directory(directory, filename)
-    except Exception as e:
-        # Fallback: return 404 if image not found
-        return ("", 404)
-
-# Empleado: Carrito del mesero
-@app.route('/empleado/carro', endpoint='empleado_carrito')
-@login_required
-@tipo_empleado_requerido('mesero')
-def empleado_carrito():
-    # Obtener items del carrito del mesero actual
-    items = CarritoItem.query.filter_by(usuario_id=current_user.id) \
-        .join(Plato) \
-        .options(db.joinedload(CarritoItem.plato).joinedload(Plato.categoria)) \
-        .all()
-
-    subtotal = sum(float(item.plato.precio) * item.cantidad for item in items)
-    servicio = subtotal * 0.10
-    total = subtotal + servicio
-
-    return render_template(
-        'empleado/carro.html',
-        items=items,
-        subtotal=subtotal,
-        servicio=servicio,
-        total=total
-    )
-
 if __name__ == '__main__':    
     with app.app_context():
         db.create_all()  
         agregar_datos_iniciales()  
         crear_admin_inicial() 
     app.run(debug=True)
-
-
-

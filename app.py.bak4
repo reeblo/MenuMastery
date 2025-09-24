@@ -1729,35 +1729,11 @@ def serve_user_image(filename):
         # Fallback: return 404 if image not found
         return ("", 404)
 
-# Empleado: Carrito del mesero
-@app.route('/empleado/carro', endpoint='empleado_carrito')
-@login_required
-@tipo_empleado_requerido('mesero')
-def empleado_carrito():
-    # Obtener items del carrito del mesero actual
-    items = CarritoItem.query.filter_by(usuario_id=current_user.id) \
-        .join(Plato) \
-        .options(db.joinedload(CarritoItem.plato).joinedload(Plato.categoria)) \
-        .all()
-
-    subtotal = sum(float(item.plato.precio) * item.cantidad for item in items)
-    servicio = subtotal * 0.10
-    total = subtotal + servicio
-
-    return render_template(
-        'empleado/carro.html',
-        items=items,
-        subtotal=subtotal,
-        servicio=servicio,
-        total=total
-    )
-
 if __name__ == '__main__':    
     with app.app_context():
         db.create_all()  
         agregar_datos_iniciales()  
         crear_admin_inicial() 
     app.run(debug=True)
-
 
 

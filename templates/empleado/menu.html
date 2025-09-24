@@ -1,0 +1,48 @@
+{% extends 'empleado/base.html' %}
+
+{% block title %}Menú (Mesero){% endblock %}
+
+{% block content %}
+<section class="py-3">
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0"><i class="fas fa-utensils me-2"></i>Menú</h2>
+      <a href="{{ url_for('empleado_pedidos') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Volver a panel
+      </a>
+    </div>
+
+    <div class="row g-4">
+      {% for categoria in menu %}
+        {% for plato in categoria.platos %}
+        <div class="col-md-6 col-xl-4">
+          <div class="card h-100 shadow-sm">
+            <img src="{{ url_for('static', filename='img/platos/' + (plato.imagen or 'default-dish.jpg')) }}" class="card-img-top" alt="{{ plato.nombre }}">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title mb-0">{{ plato.nombre }}</h5>
+                <span class="badge bg-primary">{{ categoria.nombre }}</span>
+              </div>
+              <p class="card-text text-muted">{{ plato.descripcion or 'Descripción no disponible' }}</p>
+              <div class="mt-auto d-flex justify-content-between align-items-center">
+                <span class="fw-bold">${{ "{:,.0f}".format(plato.precio) }}</span>
+                {% if plato.agotado %}
+                  <button class="btn btn-secondary" disabled><i class="fas fa-times me-2"></i>Agotado</button>
+                {% else %}
+                  <form method="POST" action="{{ url_for('agregar_al_carrito', plato_id=plato.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-primary add-to-cart">
+                      <i class="fas fa-plus me-2"></i> Añadir
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

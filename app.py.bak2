@@ -932,15 +932,54 @@ def actualizar_perfil():
             current_user.foto = filename
         else:
             flash('Formato de imagen no permitido', 'danger')
+    # Restringir a meseros (ajusta si manejas roles de otra forma)
+    if getattr(current_user, 'tipo_empleado', None) != 'mesero':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    form = ReservaForm()
+    
+    if form.validate_on_submit():
+        try:
+            fecha_reserva = datetime.strptime(
+                f"{form.fecha.data} {form.hora.data}", 
+                "%Y-%m-%d %H:%M"
+            )
+            
+            # Verificar disponibilidad de mesa
+            mesa_reservada = None
+            if form.mesa.data:
+                reserva_existente = Reserva.query.filter(
+                    Reserva.fecha == fecha_reserva,
+                    Reserva.mesa == form.mesa.data,
+                    Reserva.estado != 'cancelada'
+                ).first()
+                
+                if reserva_existente:
+                    flash(f'La mesa {form.mesa.data}ya estÃ¡ reservada para esa hora', 'warning')
+                    return redirect(url_for('empleado_reservas'))
+            
+            nueva_reserva = Reserva(
+                fecha=fecha_reserva,
+                personas=form.personas.data,
+                mesa=form.mesa.data if form.mesa.data else None,
+                comentarios=form.comentarios.data,
+                usuario_id=current_user.id,
+                estado='pendiente'
+            )
+            
+            db.session.add(nueva_reserva)
+            db.session.commit()
+            
+            flash('Reserva realizada con Ã©xito!', 'success')
+            return redirect(url_for('mis_reservas'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al procesar la reserva: {str(e)}', 'danger')
+    
+    return render_template('reservas.html', form=form)
 
-    try:
-        db.session.commit()
-        flash('Perfil actualizado correctamente', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error al actualizar el perfil: {str(e)}', 'danger')
-
-    return redirect(url_for('perfil'))#modulo de contacto
+#modulo de contacto
 @app.route('/contacto', methods=['GET', 'POST'], endpoint='contacto')
 def contacto():
     resenas = Resena.query.filter_by(aprobado=True).order_by(Resena.fecha.desc()).limit(5).all()
@@ -1719,45 +1758,9 @@ def reservas():
             flash(f'Error al procesar la reserva: {str(e)}', 'danger')
     return render_template('reservas.html', form=form)
 
-# Serve user profile images
-@app.route('/user_images/<path:filename>', endpoint='serve_user_image')
-def serve_user_image(filename):
-    try:
-        directory = app.config['UPLOAD_FOLDER_USERS']
-        return send_from_directory(directory, filename)
-    except Exception as e:
-        # Fallback: return 404 if image not found
-        return ("", 404)
-
-# Empleado: Carrito del mesero
-@app.route('/empleado/carro', endpoint='empleado_carrito')
-@login_required
-@tipo_empleado_requerido('mesero')
-def empleado_carrito():
-    # Obtener items del carrito del mesero actual
-    items = CarritoItem.query.filter_by(usuario_id=current_user.id) \
-        .join(Plato) \
-        .options(db.joinedload(CarritoItem.plato).joinedload(Plato.categoria)) \
-        .all()
-
-    subtotal = sum(float(item.plato.precio) * item.cantidad for item in items)
-    servicio = subtotal * 0.10
-    total = subtotal + servicio
-
-    return render_template(
-        'empleado/carro.html',
-        items=items,
-        subtotal=subtotal,
-        servicio=servicio,
-        total=total
-    )
-
 if __name__ == '__main__':    
     with app.app_context():
         db.create_all()  
         agregar_datos_iniciales()  
         crear_admin_inicial() 
     app.run(debug=True)
-
-
-
