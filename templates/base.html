@@ -16,7 +16,7 @@
     }
     </style>
 </head>
-<body>
+<body {% if current_user.is_authenticated %}data-user-authenticated="true"{% endif %}>
     <!-- Navbar mejorado manteniendo el diseño original -->
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">

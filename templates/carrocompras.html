@@ -95,6 +95,7 @@
                             <div class="col-md-6 mb-3 mb-md-0">
                                 <form method="POST" action="{{ url_for('confirmar_pedido') }}" id="confirmar-pedido-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" id="in_restaurant_flag" name="in_restaurant" value="False">
 
                                     <div class="form-floating mb-3">
                                         <input type="number"
@@ -126,7 +127,7 @@
                                     <span id="total-general">${{ "%.2f"|format(total) }}</span>
                                 </div>
 
-                                <button type="submit" form="confirmar-pedido-form" class="btn btn-primary btn-lg w-100 py-3 mt-4" id="confirmar-pedido-btn">
+                                <button type="button" class="btn btn-primary btn-lg w-100 py-3 mt-4" id="confirmar-pedido-btn" onclick="showLocationPrompt()">
                                     <i class="fas fa-check-circle me-2"></i> Confirmar Pedido
                                 </button>
                             </div>
@@ -138,5 +139,42 @@
         </div>
     </div>
 </section>
-{% endblock %}
+<!-- Modal para preguntar ubicación -->
+<div class="modal fade" id="locationModal" tabindex="-1" role="dialog" aria-labelledby="locationModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="locationModalLabel">Confirmar Ubicación</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>¿Te encuentras actualmente en el restaurante?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="handleLocationResponse(false)">No, es para domicilio</button>
+        <button type="button" class="btn btn-primary" onclick="handleLocationResponse(true)">Sí, estoy aquí</button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<script>
+    function showLocationPrompt() {
+        $('#locationModal').modal('show'); // Shows the Bootstrap modal
+    }
+
+    function handleLocationResponse(isInRestaurant) {
+        $('#locationModal').modal('hide'); // Hides the Bootstrap modal
+
+        if (isInRestaurant) {
+            document.getElementById('in_restaurant_flag').value = 'True';
+            document.getElementById('confirmar-pedido-form').submit(); // Submits the form
+        } else {
+            alert('Próximamente domicilios. Tu pedido no ha sido procesado.');
+            // Optionally, you can redirect or perform other actions here.
+        }
+    }
+</script>
+{% endblock %}

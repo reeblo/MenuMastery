@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="admin">
+<body class="admin" {% if current_user.is_authenticated %}data-user-authenticated="true"{% endif %}>
     <div class="admin-container">
         <header class="admin-header">
             <h1>Panel de Administración</h1>

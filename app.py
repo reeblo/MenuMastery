@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -47,9 +47,11 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'platos')
+UPLOAD_FOLDER_USERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'img_users')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER_USERS'] = UPLOAD_FOLDER_USERS
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 
 
 class LoginForm(FlaskForm):
@@ -237,9 +239,9 @@ class RegistroActividad(db.Model):
     ip = db.Column(db.String(50))
 
 
-# crear tablas si no existen
-with app.app_context():
-    db.create_all()
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 
 def redondear(valor):
@@ -893,6 +895,10 @@ def pedidos_mesero_count():
 def inicio():
     return render_template('index.html')
 
+@app.route('/ping-session')
+def ping_session():
+    return jsonify(success=True)
+
 @login_manager.user_loader
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
@@ -918,17 +924,23 @@ def actualizar_perfil():
 
     foto = request.files.get('foto')
     if foto and foto.filename != '':
-        filename = secure_filename(foto.filename)
-        ruta = os.path.join('static/perfiles', filename)
-        foto.save(ruta)
-        current_user.foto = filename
+        if allowed_file(foto.filename):
+            filename = secure_filename(foto.filename)
+            os.makedirs(app.config['UPLOAD_FOLDER_USERS'], exist_ok=True)
+            ruta = os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename)
+            foto.save(ruta)
+            current_user.foto = filename
+        else:
+            flash('Formato de imagen no permitido', 'danger')
 
     db.session.commit()
-    flash('Datos actualizados con éxito')
+    flash('Datos actualizados con éxito', 'success')
     return redirect(url_for('perfil'))
 
 
-#modulo de menu
+@app.route('/img_users/<filename>')
+def serve_user_image(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER_USERS'], filename)
 @app.route('/menu')
 @login_required
 def menu():
@@ -1153,6 +1165,12 @@ def confirmar_pedido():
         return redirect(url_for('carrito'))
 
     try:
+        in_restaurant = request.form.get('in_restaurant') == 'True'
+
+        if not in_restaurant:
+            flash('Próximamente domicilios. Tu pedido no ha sido procesado.', 'info')
+            return redirect(url_for('carrito'))
+
         mesa = request.form.get('mesa')
 
         # Calcular totales
@@ -1293,40 +1311,6 @@ def procesar_pedido():
         return redirect(url_for('carrito'))
 
 #perfil de usuario.
-@app.route('/perfil/foto', methods=['POST'])
-@login_required
-def subir_foto():
-    file = request.files.get('foto')
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-
-        # Actualiza en la base de datos
-        current_user.foto = f'uploads/{filename}'
-        db.session.commit()
-
-        flash('Foto actualizada con éxito')
-    else:
-        flash('Formato de imagen no permitido')
-    return redirect(url_for('perfil'))
-
-@app.route('/perfil/actualizar', methods=['POST'])
-@login_required
-def actualizar_datos():
-    nuevo_nombre = request.form.get('nombre')
-    nuevo_email = request.form.get('email')
-
-    if not nuevo_nombre or not nuevo_email:
-        flash('Todos los campos son obligatorios.', 'warning')
-        return redirect(url_for('perfil'))
-
-    current_user.nombre = nuevo_nombre
-    current_user.email = nuevo_email
-    db.session.commit()
-
-    flash('Datos actualizados con éxito.', 'success')
-    return redirect(url_for('perfil'))
 
 # modulo de login/Rutas de autenticación
 #registro 
@@ -1335,16 +1319,6 @@ def registro():
     form = RegistroForm()  # Usa el formulario Flask-WTF
     
     if form.validate_on_submit():
-        # Validar que los emails coincidan
-        if form.email.data != form.confirm_email.data:
-            flash('Los emails no coinciden', 'danger')
-            return redirect(url_for('registro'))
-            
-        # Validar que las contraseñas coincidan
-        if form.password.data != form.confirm_password.data:
-            flash('Las contraseñas no coinciden', 'danger')
-            return redirect(url_for('registro'))
-            
         # Verificar si el email ya existe
         if Usuario.query.filter_by(email=form.email.data).first():
             flash('Este correo ya está registrado', 'danger')

@@ -103,7 +103,8 @@
     <div class="profile-card">
         {% if modo == "editar" %}
             <h2>Editar Perfil</h2>
-            <form action="{{ url_for('actualizar_datos') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ url_for('actualizar_perfil') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <label><i class="fas fa-user"></i>Nombre</label>
                 <input type="text" name="nombre" value="{{ current_user.nombre }}" required>
 
@@ -123,7 +124,7 @@
                 </div>
             </form>
         {% else %}
-            <img src="{{ url_for('static', filename='perfiles/' + current_user.foto) }}" alt="Foto de perfil">
+            <img src="{{ url_for('serve_user_image', filename=current_user.foto) }}" alt="Foto de perfil">
             <h2>Perfil del Cliente</h2>
 
             {% if current_user.is_authenticated %}

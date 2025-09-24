@@ -1,142 +1,369 @@
-//carrusel
 document.addEventListener('DOMContentLoaded', function() {
+    // Carousel
     const slides = document.querySelector('.carousel-slides');
-    const slideItems = document.querySelectorAll('.slide');
-    const prevBtn = document.querySelector('.prev');
-    const nextBtn = document.querySelector('.next');
-    const indicators = document.querySelectorAll('.indicator');
-    let currentIndex = 0;
-    const totalSlides = slideItems.length;
-    let intervalId;
+    if (slides) {
+        const slideItems = document.querySelectorAll('.slide');
+        const prevBtn = document.querySelector('.prev');
+        const nextBtn = document.querySelector('.next');
+        const indicators = document.querySelectorAll('.indicator');
+        let currentIndex = 0;
+        const totalSlides = slideItems.length;
+        let intervalId;
 
-    function goToSlide(index) {
-        if (index < 0) {
-            index = totalSlides - 1;
-        } else if (index >= totalSlides) {
-            index = 0;
+        function goToSlide(index) {
+            if (index < 0) {
+                index = totalSlides - 1;
+            } else if (index >= totalSlides) {
+                index = 0;
+            }
+            
+            currentIndex = index;
+            slides.style.transform = `translateX(-${currentIndex * 100 / totalSlides}%)`;
+            
+            indicators.forEach((indicator, i) => {
+                indicator.classList.toggle('active', i === currentIndex);
+            });
+            
+            resetAnimations();
         }
-        
-        currentIndex = index;
-        slides.style.transform = `translateX(-${currentIndex * 100 / totalSlides}%)`;
-        
-        // Actualizar indicadores
-        indicators.forEach((indicator, i) => {
-            indicator.classList.toggle('active', i === currentIndex);
-        });
-        
-        resetAnimations();
-    }
 
-    function resetAnimations() {
-        const activeSlide = slideItems[currentIndex];
-        const h2 = activeSlide.querySelector('h2');
-        const p = activeSlide.querySelector('p');
-        const btn = activeSlide.querySelector('.btn');
-        
-        
-        h2.style.animation = 'none';
-        p.style.animation = 'none';
-        btn.style.animation = 'none';
-        
-        
-        void h2.offsetWidth;
-        void p.offsetWidth;
-        void btn.offsetWidth;
-        
-        
-        h2.style.animation = 'fadeInUp 0.8s ease';
-        p.style.animation = 'fadeInUp 0.8s ease 0.2s forwards';
-        btn.style.animation = 'fadeInUp 0.8s ease 0.4s forwards';
-    }
+        function resetAnimations() {
+            const activeSlide = slideItems[currentIndex];
+            const h2 = activeSlide.querySelector('h2');
+            const p = activeSlide.querySelector('p');
+            const btn = activeSlide.querySelector('.btn');
+            
+            h2.style.animation = 'none';
+            p.style.animation = 'none';
+            btn.style.animation = 'none';
+            
+            void h2.offsetWidth;
+            void p.offsetWidth;
+            void btn.offsetWidth;
+            
+            h2.style.animation = 'fadeInUp 0.8s ease';
+            p.style.animation = 'fadeInUp 0.8s ease 0.2s forwards';
+            btn.style.animation = 'fadeInUp 0.8s ease 0.4s forwards';
+        }
 
-
-    prevBtn.addEventListener('click', () => {
-        clearInterval(intervalId);
-        goToSlide(currentIndex - 1);
-        startAutoSlide();
-    });
-
-    nextBtn.addEventListener('click', () => {
-        clearInterval(intervalId);
-        goToSlide(currentIndex + 1);
-        startAutoSlide();
-    });
-
-    indicators.forEach((indicator, index) => {
-        indicator.addEventListener('click', () => {
-            clearInterval(intervalId);
-            goToSlide(index);
-            startAutoSlide();
-        });
-    });
-
-    // Autoplay
-    function startAutoSlide() {
-        intervalId = setInterval(() => {
-            goToSlide(currentIndex + 1);
-        }, 5000);
-    }
-
-    // Iniciar autoplay
-    startAutoSlide();
-
-    // Pausar autoplay al hacer hover
-    const carousel = document.querySelector('.carousel-container');
-    carousel.addEventListener('mouseenter', () => {
-        clearInterval(intervalId);
-    });
-
-    carousel.addEventListener('mouseleave', () => {
-        startAutoSlide();
-    });
-
-    // Manejo de teclado
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') {
+        prevBtn.addEventListener('click', () => {
             clearInterval(intervalId);
             goToSlide(currentIndex - 1);
             startAutoSlide();
-        } else if (e.key === 'ArrowRight') {
+        });
+
+        nextBtn.addEventListener('click', () => {
             clearInterval(intervalId);
             goToSlide(currentIndex + 1);
             startAutoSlide();
+        });
+
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => {
+                clearInterval(intervalId);
+                goToSlide(index);
+                startAutoSlide();
+            });
+        });
+
+        function startAutoSlide() {
+            intervalId = setInterval(() => {
+                goToSlide(currentIndex + 1);
+            }, 5000);
+        }
+
+        startAutoSlide();
+
+        const carousel = document.querySelector('.carousel-container');
+        carousel.addEventListener('mouseenter', () => {
+            clearInterval(intervalId);
+        });
+
+        carousel.addEventListener('mouseleave', () => {
+            startAutoSlide();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                clearInterval(intervalId);
+                goToSlide(currentIndex - 1);
+                startAutoSlide();
+            } else if (e.key === 'ArrowRight') {
+                clearInterval(intervalId);
+                goToSlide(currentIndex + 1);
+                startAutoSlide();
+            }
+        });
+    }
+
+    // Checkout buttons
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function() {
+            fetch('{{ url_for("carrito") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'payment_type=online'
+            }).then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            });
+        });
+    }
+
+    const cashBtn = document.getElementById('cash-btn');
+    if (cashBtn) {
+        cashBtn.addEventListener('click', function() {
+            fetch('{{ url_for("carrito") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'payment_type=cash'
+            }).then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            });
+        });
+    }
+
+    // Category filters
+    document.querySelectorAll('.category-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = this.getAttribute('data-category');
+            
+            document.querySelectorAll('.category-link').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            this.classList.add('active');
+            
+            document.querySelectorAll('.plato-item').forEach(item => {
+                if (category === 'all' || item.getAttribute('data-category') === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    const mobileCategoryFilter = document.getElementById('mobile-category-filter');
+    if (mobileCategoryFilter) {
+        mobileCategoryFilter.addEventListener('change', function() {
+            const category = this.value;
+            document.querySelectorAll('.plato-item').forEach(item => {
+                if (category === 'all' || item.getAttribute('data-category') === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Real-time reservations update
+    if (typeof(EventSource) !== "undefined") {
+        const eventSourceReservas = new EventSource('/stream-reservas');
+        eventSourceReservas.onmessage = function(e) {
+            if (e.data === 'actualizar') {
+                location.reload();
+            }
+        };
+    }
+
+    // Assign table modal
+    document.querySelectorAll('.btn-asignar-mesa').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reservaId = this.dataset.id;
+            const form = document.getElementById('formAsignarMesa');
+            form.action = `/reserva/${reservaId}/asignar-mesa`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalAsignarMesa'));
+            modal.show();
+        });
+    });
+
+    // Registration form validation
+    const registrationForm = document.getElementById('registration-form');
+    if (registrationForm) {
+        const togglePassword = document.getElementById('toggle-password');
+        const passwordField = document.getElementById('password');
+        const confirmPasswordField = document.getElementById('confirm_password');
+        
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', type);
+                confirmPasswordField.setAttribute('type', type);
+                this.classList.toggle('fa-eye-slash');
+            });
+        }
+        
+        const emailField = document.getElementById('email');
+        const confirmEmailField = document.getElementById('confirm_email');
+        
+        if (confirmEmailField) {
+            confirmEmailField.addEventListener('input', function() {
+                if (emailField.value !== confirmEmailField.value) {
+                    confirmEmailField.classList.add('is-invalid');
+                } else {
+                    confirmEmailField.classList.remove('is-invalid');
+                }
+            });
+        }
+        
+        if (confirmPasswordField) {
+            confirmPasswordField.addEventListener('input', function() {
+                if (passwordField.value !== confirmPasswordField.value) {
+                    confirmPasswordField.classList.add('is-invalid');
+                } else {
+                    confirmPasswordField.classList.remove('is-invalid');
+                }
+            });
+        }
+        
+        registrationForm.addEventListener('submit', function(event) {
+            let isValid = true;
+            
+            if (emailField.value !== confirmEmailField.value) {
+                confirmEmailField.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (passwordField.value !== confirmPasswordField.value) {
+                confirmPasswordField.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!document.getElementById('terms').checked) {
+                alert('Debes aceptar los términos y condiciones');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    }
+
+    // CSRF for all forms
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    document.querySelectorAll('form').forEach(form => {
+        if (!form.querySelector('input[name="csrf_token"]')) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken;
+            form.insertBefore(csrfInput, form.firstChild);
+        }
+    });
+
+    // Event delegation for cart actions
+    document.body.addEventListener('click', async function(e) {
+        const target = e.target;
+
+        // Add to cart
+        if (target.matches('.add-to-cart') || target.closest('.add-to-cart')) {
+            e.preventDefault();
+            const button = target.closest('.add-to-cart');
+            const form = button.closest('form');
+            
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Agregando...';
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Error al agregar al carrito');
+                }
+                
+                showToast(data.message, 'success');
+                
+                const cartCountBadge = document.querySelector('.cart-count');
+                if (cartCountBadge) {
+                    cartCountBadge.textContent = data.cart_count;
+                    cartCountBadge.classList.toggle('d-none', data.cart_count <= 0);
+                }
+                
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        // Update quantity in cart
+        if (target.matches('.update-quantity-btn')) {
+            e.preventDefault();
+            const button = target;
+            const form = button.closest('form');
+            const action = button.dataset.action;
+            
+            const formData = new FormData(form);
+            formData.append('action', action);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Error inesperado');
+
+                const cantidadSpan = form.querySelector('.cantidad-actual');
+                if (cantidadSpan) cantidadSpan.textContent = data.newQuantity;
+
+                const fila = form.closest('tr');
+                const precioText = fila.querySelector('td:nth-child(2)').textContent.replace('$', '');
+                const nuevoSubtotal = parseFloat(precioText) * data.newQuantity;
+                fila.querySelector('.subtotal-item').textContent = `$${nuevoSubtotal.toFixed(2)}`;
+
+                document.getElementById('subtotal-general').textContent = `$${data.newTotals.subtotal.toFixed(2)}`;
+                document.getElementById('servicio-general').textContent = `$${data.newTotals.servicio.toFixed(2)}`;
+                document.getElementById('total-general').textContent = `$${data.newTotals.total.toFixed(2)}`;
+            } catch (err) {
+                alert(err.message);
+                console.error(err);
+            }
+        }
+
+        // Remove from cart
+        if (target.matches('.remove-from-cart-btn')) {
+            e.preventDefault();
+            const button = target;
+            const form = button.closest('form');
+            if (confirm('¿Estás seguro de que quieres eliminar este item?')) {
+                form.submit();
+            }
         }
     });
 });
 
-
-//carro de compras
-document.getElementById('checkout-btn').addEventListener('click', function() {
-    fetch('{{ url_for("carrito") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'payment_type=online'
-    }).then(response => {
-        if (response.redirected) {
-            window.location.href = response.url;
-        }
-    });
-});
-
-document.getElementById('cash-btn').addEventListener('click', function() {
-    fetch('{{ url_for("carrito") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'payment_type=cash'
-    }).then(response => {
-        if (response.redirected) {
-            window.location.href = response.url;
-        }
-    });
-});
-
-
-// menu
-// Función para mostrar notificación
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
@@ -156,277 +383,3 @@ function showToast(message, type = 'success') {
         }, 3000);
     }, 10);
 }
-
-// Filtrado por categorías (funcionalidad existente)
-document.querySelectorAll('.category-link').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const category = this.getAttribute('data-category');
-        
-        document.querySelectorAll('.category-link').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        this.classList.add('active');
-        
-        document.querySelectorAll('.plato-item').forEach(item => {
-            if (category === 'all' || item.getAttribute('data-category') === category) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-});
-
-// Filtro móvil
-document.getElementById('mobile-category-filter').addEventListener('change', function() {
-    const category = this.value;
-    document.querySelectorAll('.plato-item').forEach(item => {
-        if (category === 'all' || item.getAttribute('data-category') === category) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-});
-
-// Manejo del formulario para agregar al carrito
-document.querySelectorAll('form[action*="agregar-al-carrito"]').forEach(form => {
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = this.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Agregando...';
-            
-            try {
-                const formData = new FormData(this);
-                const response = await fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok || !data.success) {
-                    throw new Error(data.message || 'Error al agregar al carrito');
-                }
-                
-                showToast(data.message, 'success');
-                
-                // Actualizar contador del carrito
-                const cartCountBadge = document.querySelector('.cart-count');
-                if (cartCountBadge) {
-                    cartCountBadge.textContent = data.cart_count;
-                    cartCountBadge.classList.toggle('d-none', data.cart_count <= 0);
-                }
-                
-            } catch (error) {
-                showToast(error.message, 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        }
-    });
-});
-
-//reservas
-// Actualización en tiempo real de reservas
-const eventSourceReservas = new EventSource('/stream-reservas');
-eventSourceReservas.onmessage = function(e) {
-    if (e.data === 'actualizar') {
-        location.reload();
-    }
-};
-
-// Manejo del modal para asignar mesas
-document.querySelectorAll('.btn-asignar-mesa').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const reservaId = this.dataset.id;
-        const form = document.getElementById('formAsignarMesa');
-        form.action = `/reserva/${reservaId}/asignar-mesa`;
-        
-        const modal = new bootstrap.Modal(document.getElementById('modalAsignarMesa'));
-        modal.show();
-    });
-});
-
-// carro de compras
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.actualizar-cantidad-form').forEach(form => {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const button = e.submitter || document.activeElement;
-            const action = button?.getAttribute('data-action') || 'increase';
-            const formData = new FormData(this);
-            formData.append('action', action);
-
-            // ✅ Leer el token directamente del input oculto del formulario
-            const csrfInput = this.querySelector('input[name="csrf_token"]');
-            const csrfToken = csrfInput ? csrfInput.value : '';
-            formData.append('csrf_token', csrfToken);
-
-            try {
-                const response = await fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Respuesta no válida. ¿Sesión caducada?');
-                }
-
-                const data = await response.json();
-                if (!response.ok || !data.success) throw new Error(data.error || 'Error inesperado');
-
-                const cantidadSpan = this.querySelector('.cantidad-actual');
-                if (cantidadSpan) cantidadSpan.textContent = data.newQuantity;
-
-                const fila = this.closest('tr');
-                const precioText = fila.querySelector('td:nth-child(2)').textContent.replace('$', '');
-                const nuevoSubtotal = parseFloat(precioText) * data.newQuantity;
-                fila.querySelector('.subtotal-item').textContent = `$${nuevoSubtotal.toFixed(2)}`;
-
-                document.getElementById('subtotal-general').textContent = `$${data.newTotals.subtotal.toFixed(2)}`;
-                document.getElementById('servicio-general').textContent = `$${data.newTotals.servicio.toFixed(2)}`;
-                document.getElementById('total-general').textContent = `$${data.newTotals.total.toFixed(2)}`;
-            } catch (err) {
-                alert(err.message);
-                console.error(err);
-            }
-        });
-    });
-});
-
-
-// registro de usuario
-document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar/ocultar contraseña
-    const togglePassword = document.getElementById('toggle-password');
-    const passwordField = document.getElementById('password');
-    const confirmPasswordField = document.getElementById('confirm_password');
-    
-    togglePassword.addEventListener('click', function() {
-        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordField.setAttribute('type', type);
-        confirmPasswordField.setAttribute('type', type);
-        this.classList.toggle('fa-eye-slash');
-    });
-    
-    // Validación de confirmación de email
-    const emailField = document.getElementById('email');
-    const confirmEmailField = document.getElementById('confirm_email');
-    
-    confirmEmailField.addEventListener('input', function() {
-        if (emailField.value !== confirmEmailField.value) {
-            confirmEmailField.classList.add('is-invalid');
-        } else {
-            confirmEmailField.classList.remove('is-invalid');
-        }
-    });
-    
-    // Validación de confirmación de contraseña
-    const password = document.getElementById('password');
-    const confirmPassword = document.getElementById('confirm_password');
-    
-    confirmPassword.addEventListener('input', function() {
-        if (password.value !== confirmPassword.value) {
-            confirmPassword.classList.add('is-invalid');
-        } else {
-            confirmPassword.classList.remove('is-invalid');
-        }
-    });
-    
-    // Validación del formulario antes de enviar
-    const form = document.getElementById('registration-form');
-    form.addEventListener('submit', function(event) {
-        let isValid = true;
-        
-        // Validar emails coincidan
-        if (emailField.value !== confirmEmailField.value) {
-            confirmEmailField.classList.add('is-invalid');
-            isValid = false;
-        }
-        
-        // Validar contraseñas coincidan
-        if (password.value !== confirmPassword.value) {
-            confirmPassword.classList.add('is-invalid');
-            isValid = false;
-        }
-        
-        // Validar términos aceptados
-        if (!document.getElementById('terms').checked) {
-            alert('Debes aceptar los términos y condiciones');
-            isValid = false;
-        }
-        
-        if (!isValid) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-    });
-});
-
-//modulo de administracion
-// static/js/admin.js
-document.addEventListener('DOMContentLoaded', function() {
-    // Asegurar que todos los formularios tengan el token CSRF
-    document.querySelectorAll('form').forEach(form => {
-        // Solo agregar si no existe ya
-        if (!form.querySelector('input[name="csrf_token"]')) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrf_token';
-            csrfInput.value = window.csrfToken;
-            form.insertBefore(csrfInput, form.firstChild);
-        }
-    });
-
-    // Interceptar todas las peticiones AJAX
-    const originalFetch = window.fetch;
-    window.fetch = function(url, options = {}) {
-        // Solo agregar CSRF a métodos que lo requieran
-        if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
-            options.headers = {
-                ...options.headers,
-                'X-CSRFToken': window.csrfToken
-            };
-        }
-        return originalFetch(url, options);
-    };
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  
