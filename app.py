@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -56,8 +56,8 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])  
-    password = PasswordField('ContraseÃ±a', validators=[DataRequired()])
-    submit = SubmitField('Iniciar sesiÃ³n')
+    password = PasswordField('Contraseña', validators=[DataRequired()])
+    submit = SubmitField('Iniciar sesión')
 
 class RolUsuario(Enum):
     ADMIN = 'admin'
@@ -79,22 +79,22 @@ class RegistroForm(FlaskForm):
     nombre = StringField('Nombre completo', validators=[DataRequired()])
     email = StringField('Email', validators=[
         DataRequired(),
-        Email(message='Ingresa un email vÃ¡lido')
+        Email(message='Ingresa un email válido')
     ])
     confirm_email = StringField('Confirmar Email', validators=[
         DataRequired(),
         EqualTo('email', message='Los emails deben coincidir')
     ])
-    password = PasswordField('ContraseÃ±a', validators=[
+    password = PasswordField('Contraseña', validators=[
         DataRequired(),
-        Length(min=8, message='La contraseÃ±a debe tener al menos 8 caracteres')
+        Length(min=8, message='La contraseña debe tener al menos 8 caracteres')
     ])
-    confirm_password = PasswordField('Confirmar ContraseÃ±a', validators=[
+    confirm_password = PasswordField('Confirmar Contraseña', validators=[
         DataRequired(),
-        EqualTo('password', message='Las contraseÃ±as deben coincidir')
+        EqualTo('password', message='Las contraseñas deben coincidir')
     ])
-    terms = BooleanField('Acepto los tÃ©rminos', validators=[
-        DataRequired(message='Debes aceptar los tÃ©rminos y condiciones')
+    terms = BooleanField('Acepto los términos', validators=[
+        DataRequired(message='Debes aceptar los términos y condiciones')
     ])
     submit = SubmitField('Registrarse')
 
