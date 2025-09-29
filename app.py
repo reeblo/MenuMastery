@@ -46,6 +46,9 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+login_manager.login_message = 'Por favor, inicia sesión para acceder a esta página.'
+login_manager.login_message_category = 'info'  # o 'warning', 'danger', etc.
+
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'platos')
 UPLOAD_FOLDER_USERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'img_users')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -72,7 +75,7 @@ class Usuario(db.Model, UserMixin):
     password = db.Column(db.String(200), nullable=False)
     rol = db.Column(db.String(20), default= RolUsuario.CLIENTE.value) 
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
-    foto = db.Column(db.String(200), default='default.png')
+    foto = db.Column(db.String(200), default='default.jpeg')
     tipo_empleado = db.Column(db.String(20))
 
 class RegistroForm(FlaskForm):
@@ -109,7 +112,7 @@ class ReservaForm(FlaskForm):
         ('19:00', '7:00 PM'),
         ('20:00', '8:00 PM')
     ], validators=[DataRequired()])
-    personas = SelectField('NÃºmero de personas', choices=[
+    personas = SelectField('Numero de personas', choices=[
         (1, '1 persona'),
         (2, '2 personas'),
         (3, '3 personas'),
@@ -310,7 +313,7 @@ def admin_panel():
         flash('Acceso no autorizado', 'danger')
         return redirect(url_for('inicio'))
     
-    # Agregar estadÃ­sticas
+    # Estadísticas actualizadas
     total_usuarios = Usuario.query.count()
     pedidos_hoy = Pedido.query.filter(Pedido.fecha >= datetime.today().date()).count()
     productos_inventario = Plato.query.count()
@@ -320,7 +323,8 @@ def admin_panel():
                         total_usuarios=total_usuarios,
                         pedidos_hoy=pedidos_hoy,
                         productos_inventario=productos_inventario,
-                        reservas_activas=reservas_activas)
+                        reservas_activas=reservas_activas,
+                        now=datetime.now())
 
 @app.route('/admin/platos/agregar', methods=['GET', 'POST'])
 @login_required
@@ -334,7 +338,7 @@ def agregar_plato():
     
     if form.validate_on_submit():
         try:
-            # Verificar si se subiÃ³ una imagen
+            # Verificar si se subi una imagen
             if 'imagen' not in request.files:
                 flash('No se ha seleccionado ningÃºn archivo de imagen', 'danger')
                 return redirect(url_for('agregar_plato'))
@@ -517,7 +521,7 @@ def rol_requerido(rol_necesario):
                 return redirect(url_for('login'))
             if current_user.rol != rol_necesario:
                 flash("No tienes permiso para acceder a esta secciÃ³n.", "danger")
-                return redirect(url_for('index'))
+                return redirect(url_for('inicio'))
             return func(*args, **kwargs)
         return envoltura
     return decorador
@@ -914,7 +918,19 @@ def enviar_resena():
 @login_required
 def perfil():
     modo = request.args.get('modo', 'ver')
-    return render_template('perfil.html', modo=modo)
+    form = CambioPasswordForm()
+    
+    # Obtener las reservas del usuario actual
+    reservas_usuario = Reserva.query.filter_by(usuario_id=current_user.id).all()
+    
+    # Obtener compras para el historial (si es necesario)
+    compras = []  # Aquí deberías cargar las compras del usuario si las tienes
+    
+    return render_template('perfil.html', 
+                        modo=modo, 
+                        form=form,
+                        reservas_usuario=reservas_usuario,
+                        compras=compras)
 
 @app.route('/perfil/actualizar', methods=['POST'])
 @login_required
@@ -1337,7 +1353,7 @@ def logout():
 @login_required
 def mis_reservas():
     if 'user_id' not in session:
-        flash('Por favor inicia sesiÃ³n para ver tus reservas', 'info')
+        flash('Por favor inicia sesion para ver tus reservas', 'info')
         return redirect(url_for('login'))
     
     reservas = Reserva.query.filter_by(usuario_id=session['user_id']).order_by(Reserva.fecha.desc()).all()
@@ -1686,6 +1702,7 @@ def menu():
     categorias = Categoria.query.options(db.joinedload(Categoria.platos)).all()
     return render_template('menu.html', menu=categorias)
 
+
 @app.route('/reservas', methods=['GET', 'POST'])
 @login_required
 def reservas():
@@ -1693,6 +1710,7 @@ def reservas():
     if form.validate_on_submit():
         try:
             fecha_reserva = datetime.strptime(f"{form.fecha.data} {form.hora.data}", "%Y-%m-%d %H:%M")
+            
             if form.mesa.data:
                 reserva_existente = Reserva.query.filter(
                     Reserva.fecha == fecha_reserva,
@@ -1702,6 +1720,7 @@ def reservas():
                 if reserva_existente:
                     flash(f"La mesa {form.mesa.data} ya está reservada para esa hora", 'warning')
                     return redirect(url_for('reservas'))
+            
             nueva_reserva = Reserva(
                 fecha=fecha_reserva,
                 personas=int(form.personas.data),
@@ -1710,13 +1729,17 @@ def reservas():
                 usuario_id=current_user.id,
                 estado='pendiente'
             )
+            
             db.session.add(nueva_reserva)
             db.session.commit()
+            
             flash('Reserva realizada con éxito!', 'success')
-            return redirect(url_for('mis_reservas'))
+            return redirect(url_for('perfil', modo='editar'))  # Redirigir al perfil en modo editar
+            
         except Exception as e:
             db.session.rollback()
             flash(f'Error al procesar la reserva: {str(e)}', 'danger')
+    
     return render_template('reservas.html', form=form)
 
 # Serve user profile images
@@ -1751,6 +1774,144 @@ def empleado_carrito():
         servicio=servicio,
         total=total
     )
+    
+    
+#cambio de contraseña
+class CambioPasswordForm(FlaskForm):
+    password_actual = PasswordField('Contraseña actual', validators=[DataRequired()])
+    nueva_password = PasswordField('Nueva contraseña', validators=[
+        DataRequired(),
+        Length(min=8, message="La contraseña debe tener al menos 8 caracteres")
+    ])
+    confirmar_password = PasswordField('Confirmar nueva contraseña', validators=[
+        DataRequired(),
+        EqualTo('nueva_password', message="Las contraseñas no coinciden")
+    ])
+    submit = SubmitField('Actualizar contraseña')
+
+
+@app.route('/cambiar-contraseña', methods=['GET', 'POST'])
+@login_required
+def cambiar_contraseña():
+    form = CambioPasswordForm()
+    if form.validate_on_submit():
+        # Verificar contraseña actual
+        if not check_password_hash(current_user.password, form.password_actual.data):
+            flash('La contraseña actual no es correcta', 'danger')
+            return redirect(url_for('cambiar_contraseña'))
+
+        # Guardar nueva contraseña
+        current_user.password = generate_password_hash(form.nueva_password.data)
+        try:
+            db.session.commit()
+            flash('Contraseña actualizada correctamente', 'success')
+            return redirect(url_for('perfil'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar la contraseña: {str(e)}', 'danger')
+
+    return render_template('cambiar_contraseña.html', form=form)
+
+
+#actualizar foto de perfil
+@app.route('/actualizar-foto', methods=['POST'])
+@login_required
+def actualizar_foto():
+    if 'foto' in request.files:
+        foto = request.files['foto']
+        if foto.filename != '':
+            filename = secure_filename(foto.filename)
+            # CORREGIR: Usar UPLOAD_FOLDER_USERS en lugar de UPLOAD_FOLDER
+            ruta = os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename)
+            foto.save(ruta)
+            current_user.foto = filename
+            db.session.commit()
+            flash("Foto actualizada correctamente", "success")
+    return redirect(url_for('perfil'))
+
+@app.route('/reserva/<int:id>/cancelar-cliente', methods=['POST'])
+@login_required
+def cancelar_reserva_cliente(id):
+    reserva = Reserva.query.get_or_404(id)
+    
+    # Verificar que la reserva pertenece al usuario actual
+    if reserva.usuario_id != current_user.id:
+        flash('No tienes permiso para cancelar esta reserva', 'danger')
+        return redirect(url_for('perfil', modo='editar'))
+    
+    try:
+        # Verificar si la cancelación es con menos de 1 hora de anticipación
+        ahora = datetime.utcnow()
+        diferencia = reserva.fecha - ahora
+        
+        if diferencia.total_seconds() < 3600:  # Menos de 1 hora
+            flash('Cancelación con menos de 1 hora de anticipación. Puede haber penalización.', 'warning')
+        
+        reserva.estado = 'cancelada'
+        db.session.commit()
+        
+        flash('Reserva cancelada exitosamente', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al cancelar la reserva: {str(e)}', 'danger')
+    
+    return redirect(url_for('perfil', modo='editar'))
+
+@app.route('/reserva/<int:id>/modificar', methods=['GET', 'POST'])
+@login_required
+def modificar_reserva_cliente(id):
+    reserva = Reserva.query.get_or_404(id)
+    
+    # Verificar que la reserva pertenece al usuario actual
+    if reserva.usuario_id != current_user.id:
+        flash('No tienes permiso para modificar esta reserva', 'danger')
+        return redirect(url_for('perfil', modo='editar'))
+    
+    form = ReservaForm(obj=reserva)
+    
+    # Pre-cargar los datos actuales
+    if request.method == 'GET':
+        form.fecha.data = reserva.fecha.date()
+        form.hora.data = reserva.fecha.strftime('%H:%M')
+        form.personas.data = str(reserva.personas)
+        form.mesa.data = reserva.mesa or ''
+        form.comentarios.data = reserva.comentarios or ''
+    
+    if form.validate_on_submit():
+        try:
+            fecha_reserva = datetime.strptime(f"{form.fecha.data} {form.hora.data}", "%Y-%m-%d %H:%M")
+            
+            # Verificar disponibilidad si se cambió la mesa
+            if form.mesa.data and form.mesa.data != reserva.mesa:
+                reserva_existente = Reserva.query.filter(
+                    Reserva.fecha == fecha_reserva,
+                    Reserva.mesa == form.mesa.data,
+                    Reserva.estado != 'cancelada',
+                    Reserva.id != reserva.id
+                ).first()
+                if reserva_existente:
+                    flash(f"La mesa {form.mesa.data} ya está reservada para esa hora", 'warning')
+                    return redirect(url_for('modificar_reserva_cliente', id=id))
+            
+            # Actualizar la reserva
+            reserva.fecha = fecha_reserva
+            reserva.personas = int(form.personas.data)
+            reserva.mesa = form.mesa.data if form.mesa.data else None
+            reserva.comentarios = form.comentarios.data
+            
+            db.session.commit()
+            flash('Reserva modificada exitosamente', 'success')
+            return redirect(url_for('perfil', modo='editar'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al modificar la reserva: {str(e)}', 'danger')
+    
+    return render_template('reservas.html', form=form, modificar=True, reserva=reserva)
+
+
+
 
 if __name__ == '__main__':    
     with app.app_context():

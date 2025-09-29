@@ -1,3 +1,13 @@
+/* ===== VARIABLES CSS ===== */
+:root {
+  --primary-color: #3498db;
+  --hover-color: #2980b9;
+  --active-color: #1abc9c;
+  --danger-color: #e74c3c;
+  --success-color: #2ecc71;
+  --warning-color: #f39c12;
+}
+
 /* ===== ESTILOS GENERALES ===== */
 body {
   font-family: 'Arial', sans-serif;
@@ -1772,6 +1782,31 @@ body.admin {
     color: white !important;
 }
 
+.stats-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 15px;
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.quick-action {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+.quick-action:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.recent-activity {
+    max-height: 400px;
+    overflow-y: auto;
+}
+    
 /* Media queries para tablas en dispositivos pequeños */
 @media (max-width: 768px) {
   .table thead {
@@ -1956,5 +1991,583 @@ body.admin {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/*perfil*/
+/* ==== PERFIL DE USUARIO ==== */
+.profile-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+}
 
-  
+.profile-card {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    padding: 35px 25px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    animation: fadeIn 0.8s ease;
+}
+
+.profile-img img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e0e0e0;
+    margin-bottom: 15px;
+}
+
+.profile-card h2 {
+    font-weight: 700;
+    font-size: 24px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.profile-card p {
+    font-size: 16px;
+    margin: 8px 0;
+    color: #444;
+}
+
+.profile-card p i {
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+
+.form-group {
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+}
+
+.form-group input {
+    border-radius: 8px;
+    padding: 10px;
+    width: 100%;
+    border: 1px solid #ccc;
+    margin-top: 5px;
+}
+
+.btn-group-custom {
+    margin-top: 25px;
+}
+
+.btn-custom {
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-size: 15px;
+    margin: 6px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-settings { background-color: #17a2b8; color: white; }
+.btn-settings:hover { background-color: #138496; }
+
+.btn-logout { background-color: #e74c3c; color: white; }
+.btn-logout:hover { background-color: #c0392b; }
+
+.btn-home { background-color: #34495e; color: white; }
+.btn-home:hover { background-color: #2c3e50; }
+
+/* ==== SECCIONES DEL PERFIL ==== */
+.profile-sections {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.profile-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.profile-section h3 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+}
+
+.profile-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.profile-table th, .profile-table td {
+    border-bottom: 1px solid #eee;
+    padding: 10px;
+    text-align: left;
+}
+
+.profile-table th {
+    background-color: #f5f7fa;
+    font-weight: 600;
+}
+
+.profile-table tr:hover td {
+    background-color: #fafafa;
+}
+
+/* Menú de ajustes */
+.settings-menu {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.settings-menu .tab-btn {
+    background: #eee;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.settings-menu .tab-btn.active {
+    background: #3498db;
+    color: #fff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.profile-img {
+    position: relative;
+    display: inline-block;
+}
+
+.camera-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: #3498db;
+    color: white;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.camera-icon:hover {
+    background: #2980b9;
+}
+
+/* ==== ESTILOS PARA RESERVAS EN PERFIL ==== */
+
+/* Contenedor de tabla */
+.table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+/* Badges de estado */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-confirmed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-other {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+/* Botones de acción */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-cancel, .btn-edit {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-cancel {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.btn-cancel:hover {
+    background-color: #f1b0b7;
+}
+
+.btn-edit {
+    background-color: #cce7ff;
+    color: #004085;
+}
+
+.btn-edit:hover {
+    background-color: #99ceff;
+}
+
+/* Sin acción disponible */
+.no-action {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Sin reservas */
+.no-reservas {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.no-reservas i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Resumen de reservas */
+.reservas-resumen {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid #3498db;
+}
+
+.reservas-lista {
+    margin: 10px 0;
+}
+
+.reserva-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reserva-item:last-child {
+    border-bottom: none;
+}
+
+.btn-view-all {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.btn-view-all:hover {
+    background-color: #2980b9;
+}
+
+
+/* ===== ESTILOS ESPECÍFICOS PARA BOTONES DEL PERFIL ===== */
+
+/* Botones personalizados - mayor especificidad */
+.btn-group-custom .btn-custom {
+    border-radius: 25px !important;
+    padding: 10px 20px !important;
+    font-size: 15px !important;
+    margin: 6px !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+}
+
+/* Eliminar estilos por defecto de Bootstrap que interfieren */
+.btn-group-custom .btn-custom.btn {
+    background-image: none !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+/* Colores específicos para cada botón */
+.btn-group-custom .btn-settings { 
+    background-color: #17a2b8 !important; 
+    color: white !important; 
+}
+
+.btn-group-custom .btn-settings:hover { 
+    background-color: #138496 !important; 
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+.btn-group-custom .btn-logout { 
+    background-color: #e74c3c !important; 
+    color: white !important; 
+}
+
+.btn-group-custom .btn-logout:hover { 
+    background-color: #c0392b !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+.btn-group-custom .btn-home { 
+    background-color: #34495e !important; 
+    color: white !important; 
+}
+
+.btn-group-custom .btn-home:hover { 
+    background-color: #2c3e50 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+/* Botones de acción en tablas */
+.action-buttons .btn {
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-size: 0.8rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    margin: 2px !important;
+}
+
+/* Botón de cancelar en tabla */
+.action-buttons .btn-outline-danger {
+    color: #721c24 !important;
+    border-color: #f5c6cb !important;
+}
+
+.action-buttons .btn-outline-danger:hover {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+/* Botón de modificar en tabla */
+.action-buttons .btn-outline-primary {
+    color: #004085 !important;
+    border-color: #b8daff !important;
+}
+
+.action-buttons .btn-outline-primary:hover {
+    background-color: #cce7ff !important;
+    color: #004085 !important;
+}
+
+/* Botón Ver todas las reservas */
+.btn-view-all {
+    display: inline-block !important;
+    padding: 8px 16px !important;
+    background-color: #3498db !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 4px !important;
+    font-size: 0.9rem !important;
+    transition: background-color 0.3s ease !important;
+    border: none !important;
+}
+
+.btn-view-all:hover {
+    background-color: #2980b9 !important;
+    color: white !important;
+    text-decoration: none !important;
+}
+
+/* Botones del modal */
+.modal-footer .btn {
+    border-radius: 4px !important;
+    padding: 8px 16px !important;
+    font-weight: 500 !important;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+.modal-footer .btn-danger {
+    background-color: #e74c3c !important;
+    border-color: #e74c3c !important;
+}
+
+/* Tabs del panel de ajustes */
+.settings-menu .tab-btn {
+    background: #e9ecef !important;
+    border: none !important;
+    padding: 10px 15px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-size: 0.9rem !important;
+    color: #495057 !important;
+    margin: 2px !important;
+}
+
+.settings-menu .tab-btn.active {
+    background: #3498db !important;
+    color: #fff !important;
+}
+
+.settings-menu .tab-btn:hover:not(.active) {
+    background: #dee2e6 !important;
+}
+
+/* ===== BOTONES DEL FORMULARIO DE AJUSTES ===== */
+
+/* Contenedor de botones del formulario */
+.tab-content form .btn {
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 5px !important;
+    text-decoration: none !important;
+}
+
+/* Botón Guardar cambios (debería usar btn-primary de Bootstrap) */
+.tab-content form .btn-primary {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+}
+
+.tab-content form .btn-primary:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+/* Botón Volver (estilo personalizado) */
+.tab-content form .btn-home {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+}
+
+.tab-content form .btn-home:hover {
+    background-color: #5a6268 !important;
+    border-color: #545b62 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3) !important;
+}
+
+/* Estilos específicos para el formulario de cambiar contraseña */
+#password form {
+    margin-top: 20px;
+}
+
+#password .form-group {
+    margin-bottom: 1.5rem;
+}
+
+#password .form-control {
+    border-radius: 6px;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+}
+
+#password .form-control:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+/* Grupo de botones en formularios */
+.tab-content .btn-group-custom {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 25px;
+    justify-content: flex-start;
+}
+
+/* Responsive para botones del formulario */
+@media (max-width: 576px) {
+    .tab-content .btn-group-custom {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .tab-content .btn-group-custom .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Estilos para botones generados por Flask-WTF */
+form button[type="submit"] {
+    background-color: #3498db !important;
+    border-color: #3498db !important;
+    color: white !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 5px !important;
+}
+
+form button[type="submit"]:hover {
+    background-color: #3498db !important;
+    border-color: #3498db !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
+}
