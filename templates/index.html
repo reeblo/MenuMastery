@@ -54,7 +54,7 @@
     <div class="container my-5">
         <div class="row g-4">
             <!-- Mapa y Ubicación - Ocupa 5 columnas en pantallas grandes -->
-            <div class="col-lg-5 col-md-6 col-12">
+            <div class="col-lg-4 col-md-6 col-12">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-dark text-white">
                         <h2 class="h5 mb-0">Nuestra ubicación</h2>
@@ -77,8 +77,8 @@
             </div>
     
             <!-- Oferta Especial - Ocupa 3 columnas en pantallas grandes -->
-            <div class="col-lg-3 col-md-6 col-12">
-                <div class="card h-100 bg-gradient-primary text-white shadow-lg">
+            <div class="col-lg-4 col-md-6 col-12">
+                <div class="card h-100 bg-gradient-primary text-black shadow-lg">
                     <div class="card-body d-flex flex-column justify-content-center align-items-center p-4 text-center">
                         <div class="badge bg-white text-primary mb-3">Oferta exclusiva</div>
                         <h2 class="card-title h1">20% de descuento</h2>
@@ -92,7 +92,7 @@
             </div>
     
             <!-- Promoción destacada - Ocupa 4 columnas en pantallas grandes -->
-            <div class="col-lg-4 col-md-12 col-12 mt-md-0 mt-4">
+            <div class="col-lg-4 col-md-6 col-12 mt-md-0 mt-4">
                 <div class="h-100 overflow-hidden rounded-3 shadow-sm" style="position: relative;">
                     <img src="{{ url_for('static', filename='img/promocion index.png') }}" class="img-fluid w-100 h-100" style="object-fit: cover; min-height: 300px;" alt="Promoción del mes en MenuMastery" loading="lazy">
                     <div class="promo-overlay">
@@ -104,5 +104,45 @@
             </div>
         </div>
     </div>
+
+    <!-- Sección Sobre Nosotros -->
+    <section class="about-section py-5 mt-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+        
+        <!-- Texto -->
+        <div class="col-lg-6 order-2 order-lg-1">
+            <h2 class="about-title mb-4">Sobre Nosotros</h2>
+            <p class="lead">
+            En <strong>MenuMastery</strong> transformamos cada comida en una experiencia inolvidable. 
+            Nuestra cocina fusiona tradición y vanguardia, cuidando cada detalle desde la selección 
+            de ingredientes frescos hasta la presentación en tu mesa.
+            </p>
+            <p class="text-muted">
+            Somos más que un restaurante: somos un espacio para compartir, celebrar y disfrutar 
+            con quienes más quieres. Nuestro compromiso es ofrecerte hospitalidad, excelencia y 
+            momentos que queden en tu memoria.
+            </p>
+            <a href="/reservas" class="btn btn-primary mt-3">
+            <i class="fas fa-utensils me-2"></i>Descubre nuestra experiencia
+            </a>
+        </div>
+
+        <!-- Imagen -->
+        <div class="col-lg-6 order-1 order-lg-2">
+            <div class="about-img-wrapper shadow-sm rounded-3 overflow-hidden">
+            <img src="{{ url_for('static', filename='/img/equipo de trabajo .jpg') }}" 
+                alt="Equipo MenuMastery trabajando en cocina" 
+                class="img-fluid w-100 h-100" 
+                style="object-fit: cover; min-height: 350px;">
+            </div>
+        </div>
+        </div>
+    </div>
+    </section>
+
+
+ 
+
 </section>
 {% endblock %}

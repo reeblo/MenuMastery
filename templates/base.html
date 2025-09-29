@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
     :root {
-      --primary-color: {{ theme_color|default('#3498db') }};
+        --primary-color: {{ theme_color|default('#3498db') }};
     }
     </style>
 </head>
@@ -41,10 +41,21 @@
                     <div class="d-flex icons">
                         <a href="{{ url_for('carrito') }}" id="carritoToggle" class="nav-link" aria-label="Carrito de compras">
                             <img src="{{ url_for('static', filename='img/carro de compras.webp') }}" alt="Carrito de compras" class="icon" width="23" height="23" loading="lazy" />
+                            <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                0
+                            </span>
                         </a>
+
                         <a href="{{ url_for('perfil') }}" id="usuarioIcon" class="nav-link ms-3" aria-label="Perfil de usuario">
                             <img src="{{ url_for('static', filename='img/usuario.webp') }}" alt="Perfil de usuario" class="icon" width="23" height="23" loading="lazy" />
                         </a>
+
+                        {% if current_user.is_authenticated %}
+                            <span class="user-greeting d-flex align-items-center me-3">
+                                <i class="fas fa-hand-sparkles me-1 text-primary"></i>
+                                Hola, <strong>{{ current_user.nombre }}</strong>
+                            </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -68,7 +79,7 @@
 
                 <div class="col-md-4">
                     <div class="descarga text-center">
-                        <p>Disponible en:</p>
+                        <p>Proximamente en:</p>
                         <div>
                             <a href="#"><img src="/static/img/apple_store.webp" alt="App Store" class="d-inline"></a>
                             <a href="#"><img src="/static/img/icons8-google-play-30.png" alt="Play Store" class="d-inline"></a>

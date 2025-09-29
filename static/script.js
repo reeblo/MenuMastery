@@ -301,9 +301,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cartCountBadge = document.querySelector('.cart-count');
                 if (cartCountBadge) {
                     cartCountBadge.textContent = data.cart_count;
-                    cartCountBadge.classList.toggle('d-none', data.cart_count <= 0);
+
+                    if (data.cart_count > 0) {
+                        cartCountBadge.classList.remove('d-none'); 
+                    } else {
+                        cartCountBadge.classList.add('d-none'); 
+                    }
+
+                    // Animación opcional
+                    cartCountBadge.classList.add("pulse");
+                    setTimeout(() => cartCountBadge.classList.remove("pulse"), 500);
                 }
-                
             } catch (error) {
                 showToast(error.message, 'error');
             } finally {
@@ -383,3 +391,4 @@ function showToast(message, type = 'success') {
         }, 3000);
     }, 10);
 }
+

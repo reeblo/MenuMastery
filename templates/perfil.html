@@ -1,155 +1,300 @@
-{% block content %}
-<style>
-    body {
-        background: linear-gradient(to right, #f9fafb, #edf2f7);
-        font-family: 'Segoe UI', sans-serif;
-    }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil de Usuario</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
 
-    .profile-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 60px 20px;
-    }
+    <div class="profile-wrapper">
+        {% if modo == 'editar' %}
+            <!-- Panel de Ajustes -->
+            <div class="profile-card">
+                <h2><i class="fas fa-cog"></i> Panel de Ajustes</h2>
 
-    .profile-card {
-        background: white;
-        border-radius: 20px;
-        max-width: 650px;
-        width: 100%;
-        padding: 40px 30px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        text-align: center;
-        animation: fadeIn 0.8s ease;
-    }
+                <!-- Opciones de menú -->
+                <div class="settings-menu">
+                    <button class="tab-btn active" data-tab="password"><i class="fas fa-key"></i> Cambiar contraseña</button>
+                    <button class="tab-btn" data-tab="compras"><i class="fas fa-shopping-bag"></i> Historial de compras</button>
+                    <button class="tab-btn" data-tab="reservas"><i class="fas fa-calendar-alt"></i> Mis Reservas</button>
+                </div>
 
-    .profile-card img {
-        width: 130px;
-        height: 130px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid #dee2e6;
-        margin-bottom: 20px;
-    }
+                <!-- Cambiar contraseña -->
+                <div id="password" class="tab-content active">
+                    <h3><i class="fas fa-key"></i> Cambiar contraseña</h3>
+                    <form method="POST" action="{{ url_for('cambiar_contraseña') }}">
+                        {{ form.hidden_tag() }} 
 
-    .profile-card h2 {
-        font-weight: 700;
-        font-size: 26px;
-        color: #2c3e50;
-        margin-bottom: 15px;
-    }
+                        <div class="form-group">
+                            <label>Correo electrónico</label>
+                            <input type="email" name="email" class="form-control" required placeholder="Tu correo" value="{{ current_user.email }}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Contraseña actual</label>
+                            {{ form.password_actual(class="form-control", required=true) }}
+                        </div>
 
-    .profile-card p, .profile-card label {
-        font-size: 17px;
-        margin: 8px 0;
-        color: #555;
-    }
+                        <div class="form-group">
+                            <label>Nueva contraseña</label>
+                            {{ form.nueva_password(class="form-control", required=true) }}
+                        </div>
 
-    .profile-card p i, .profile-card label i {
-        margin-right: 10px;
-        color: #007bff;
-    }
+                        <div class="form-group">
+                            <label>Confirmar nueva contraseña</label>
+                            {{ form.confirmar_password(class="form-control", required=true) }}
+                        </div>
 
-    .btn-group-custom {
-        margin-top: 25px;
-    }
+                        <button type="submit" class="btn btn-custom btn-settings">Guardar cambios</button>
+                        <a href="{{ url_for('perfil') }}" class="btn btn-custom btn-home"><i class="fas fa-arrow-left"></i> Volver</a>
+                    </form>
+                </div>
 
-    .btn-custom {
-        border-radius: 25px;
-        padding: 10px 25px;
-        font-size: 16px;
-        margin: 8px;
-        transition: all 0.2s ease;
-    }
+                <!-- Compras -->
+                <div id="compras" class="tab-content">
+                    <h3><i class="fas fa-shopping-bag"></i> Historial de Compras</h3>
+                    <table class="profile-table">
+                        <thead><tr><th>Fecha</th><th>Platos</th><th>Total</th><th>Estado</th></tr></thead>
+                        <tbody>
+                            {% for compra in compras %}
+                            <tr>
+                                <td>{{ compra.fecha }}</td>
+                                <td>{{ compra.platos }}</td>
+                                <td>${{ compra.total }}</td>
+                                <td>{{ compra.estado }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4">No tienes compras registradas</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Reservas -->
+                <div id="reservas" class="tab-content">
+                    <h3><i class="fas fa-calendar-alt"></i> Mis Reservas</h3>
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
 
-    .btn-custom i {
-        margin-right: 8px;
-    }
+                    {% if reservas_usuario %}
+                        <div class="table-container">
+                            <table class="profile-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Personas</th>
+                                        <th>Mesa</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reserva in reservas_usuario|sort(attribute='fecha', reverse=true) %}
+                                    <tr>
+                                        <td>{{ reserva.fecha.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ reserva.fecha.strftime('%H:%M') }}</td>
+                                        <td>{{ reserva.personas }}</td>
+                                        <td>
+                                            {% if reserva.mesa %}
+                                                Mesa {{ reserva.mesa }}
+                                            {% else %}
+                                                Por asignar
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="status-badge 
+                                                {% if reserva.estado == 'confirmada' %}status-confirmed
+                                                {% elif reserva.estado == 'pendiente' %}status-pending
+                                                {% elif reserva.estado == 'cancelada' %}status-cancelled
+                                                {% else %}status-other{% endif %}">
+                                                {{ reserva.estado|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if reserva.estado in ['pendiente', 'confirmada'] %}
+                                                <div class="action-buttons">
+                                                    <button class="btn btn-sm btn-outline-danger cancelar-btn" 
+                                                            data-reserva-id="{{ reserva.id }}"
+                                                            data-reserva-fecha="{{ reserva.fecha.strftime('%d/%m/%Y %H:%M') }}">
+                                                        <i class="fas fa-times"></i> Cancelar
+                                                    </button>
+                                                    
+                                                    {% if reserva.estado == 'pendiente' %}
+                                                    <button class="btn btn-sm btn-outline-primary modificar-btn"
+                                                            data-reserva-id="{{ reserva.id }}">
+                                                        <i class="fas fa-edit"></i> Modificar
+                                                    </button>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">No disponible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="no-reservas">
+                            <i class="fas fa-calendar-times"></i>
+                            <p>No tienes reservas activas</p>
+                            <a href="{{ url_for('reservas') }}" class="btn btn-custom btn-settings">
+                                <i class="fas fa-plus"></i> Hacer Reserva
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>  
+            </div>
 
-    .btn-logout { background-color: #e74c3c; color: white; }
-    .btn-logout:hover { background-color: #c0392b; }
+        {% else %}
+            <!-- Tarjeta normal del perfil -->
+            <div class="profile-card">
+                <div class="profile-img">
+                    <img src="{{ url_for('serve_user_image', filename=current_user.foto) }}" alt="Foto de perfil">
 
-    .btn-home { background-color: #34495e; color: white; }
-    .btn-home:hover { background-color: #2c3e50; }
+                    <!-- Botón cámara -->
+                    <form action="{{ url_for('actualizar_foto') }}" method="POST" enctype="multipart/form-data" class="upload-photo-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <label for="foto" class="camera-icon">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" name="foto" id="foto" accept="image/*" onchange="this.form.submit()" hidden>
+                    </form>
+                </div>
+                <h2>Perfil del Cliente</h2>
 
-    .btn-settings { background-color: #17a2b8; color: white; }
-    .btn-settings:hover { background-color: #138496; }
+                <p><i class="fas fa-user"></i> <strong>{{ current_user.nombre }}</strong></p>
+                <p><i class="fas fa-envelope"></i> {{ current_user.email }}</p>
+                <p><i class="fas fa-user-tag"></i> {{ current_user.rol }}</p>
 
-    input, .form-control {
-        border-radius: 8px;
-        padding: 10px;
-        width: 100%;
-        border: 1px solid #ccc;
-        margin-top: 5px;
-    }
-
-    button[type="submit"] {
-        margin-top: 15px;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 600px) {
-        .profile-card {
-            padding: 30px 20px;
-        }
-    }
-</style>
-
-<div class="profile-wrapper">
-    <div class="profile-card">
-        {% if modo == "editar" %}
-            <h2>Editar Perfil</h2>
-            <form action="{{ url_for('actualizar_perfil') }}" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <label><i class="fas fa-user"></i>Nombre</label>
-                <input type="text" name="nombre" value="{{ current_user.nombre }}" required>
-
-                <label><i class="fas fa-envelope"></i>Correo electrónico</label>
-                <input type="email" name="email" value="{{ current_user.email }}" required>
-
-                <label><i class="fas fa-image"></i>Foto de perfil</label>
-                <input type="file" name="foto" accept="image/*">
-
-                <div class="btn-group-custom">
-                    <button type="submit" class="btn btn-custom btn-settings">
-                        <i class="fas fa-save"></i> Guardar cambios
-                    </button>
-                    <a href="{{ url_for('perfil') }}" class="btn btn-custom btn-home">
-                        <i class="fas fa-arrow-left"></i> Cancelar
+                <!-- Resumen rápido de reservas - CORREGIDO -->
+                {% if reservas_usuario and (reservas_usuario|selectattr('estado', 'in', ['pendiente', 'confirmada'])|list) %}
+                <div class="reservas-resumen">
+                    <h4><i class="fas fa-calendar-check"></i> Próximas Reservas</h4>
+                    <div class="reservas-lista">
+                        {% for reserva in (reservas_usuario|selectattr('estado', 'in', ['pendiente', 'confirmada'])|sort(attribute='fecha'))[:3] %}
+                        <div class="reserva-item">
+                            <strong>{{ reserva.fecha.strftime('%d/%m %H:%M') }}</strong> - 
+                            {{ reserva.personas }} persona{{ 's' if reserva.personas > 1 }}
+                            <span class="status-badge status-{{ 'confirmed' if reserva.estado == 'confirmada' else 'pending' }}">
+                                {{ reserva.estado|title }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ url_for('perfil', modo='editar') }}#reservas" class="btn-view-all">
+                        Ver todas las reservas
                     </a>
                 </div>
-            </form>
-        {% else %}
-            <img src="{{ url_for('serve_user_image', filename=current_user.foto) }}" alt="Foto de perfil">
-            <h2>Perfil del Cliente</h2>
-
-            {% if current_user.is_authenticated %}
-                <p><i class="fas fa-user"></i><strong>Nombre:</strong> {{ current_user.nombre }}</p>
-                <p><i class="fas fa-envelope"></i><strong>Correo:</strong> {{ current_user.email }}</p>
-                <p><i class="fas fa-user-tag"></i><strong>Rol:</strong> {{ current_user.rol }}</p>
+                {% endif %}
 
                 <div class="btn-group-custom">
                     <a href="{{ url_for('perfil', modo='editar') }}" class="btn btn-custom btn-settings">
                         <i class="fas fa-cog"></i> Ajustes
                     </a>
+                    <a href="{{ url_for('inicio') }}" class="btn btn-custom btn-home">
+                        <i class="fas fa-home"></i> Inicio
+                    </a>
                     <a href="{{ url_for('logout') }}" class="btn btn-custom btn-logout">
                         <i class="fas fa-sign-out-alt"></i> Cerrar sesión
                     </a>
-                    <a href="/" class="btn btn-custom btn-home">
-                        <i class="fas fa-home"></i> Volver al inicio
-                    </a>
                 </div>
-            {% else %}
-                <p>No has iniciado sesión.</p>
-                <a href="{{ url_for('login') }}" class="btn btn-primary btn-custom mt-3">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar sesión
-                </a>
-            {% endif %}
+            </div>
         {% endif %}
     </div>
-</div>
-{% endblock %}
+
+    <!-- Modal de confirmación para cancelar - CORREGIDO -->
+    <div class="modal fade" id="cancelarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Cancelación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que quieres cancelar la reserva del <strong id="fechaReserva"></strong>?</p>
+                    <p class="modal-note">Las cancelaciones con menos de 1 hora de anticipación pueden tener penalización.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mantener reserva</button>
+                    <form id="cancelarForm" method="POST" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-danger">Sí, cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function(){
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Event listeners para botones de cancelar - CORREGIDO
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.cancelar-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const reservaId = this.getAttribute('data-reserva-id');
+                    const fechaReserva = this.getAttribute('data-reserva-fecha');
+                    cancelarReserva(reservaId, fechaReserva);
+                });
+            });
+
+            // Event listeners para botones de modificar
+            document.querySelectorAll('.modificar-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const reservaId = this.getAttribute('data-reserva-id');
+                    modificarReserva(reservaId);
+                });
+            });
+        });
+
+        function cancelarReserva(reservaId, fechaReserva) {
+            const form = document.getElementById('cancelarForm');
+            const fechaElement = document.getElementById('fechaReserva');
+            
+            // CORREGIDO: Usar la ruta correcta para clientes
+            form.action = `/reserva/${reservaId}/cancelar-cliente`;
+            fechaElement.textContent = fechaReserva;
+            
+            // Mostrar el modal usando Bootstrap
+            const modalElement = document.getElementById('cancelarModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                console.error('Modal no encontrado');
+            }
+        }
+
+        function modificarReserva(reservaId) {
+            // Redirigir a la página de modificación
+            window.location.href = `/reserva/${reservaId}/modificar`;
+        }
+
+        
+    </script>
+</body>
+</html>
