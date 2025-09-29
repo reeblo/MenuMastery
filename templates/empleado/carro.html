@@ -89,9 +89,27 @@
               <form method="POST" action="{{ url_for('confirmar_pedido') }}" id="confirmar-pedido-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" id="in_restaurant_flag" name="in_restaurant" value="True">
-                <div class="form-floating mb-3">
-                  <input type="number" class="form-control" name="mesa" id="mesa" placeholder="Número de mesa" min="1" max="50" required>
-                  <label for="mesa">Número de mesa</label>
+                <input type="hidden" name="mesa" id="mesa"/>
+
+                <div class="mb-3">
+                  <button class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMesas" aria-expanded="false" aria-controls="collapseMesas">
+                    <span><i class="fas fa-chair me-2"></i>Seleccionar mesa</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                  <div class="collapse mt-2" id="collapseMesas">
+                    <div class="list-group">
+                      {% if mesas_disponibles %}
+                        {% for mesa in mesas_disponibles %}
+                        <button type="button" class="list-group-item list-group-item-action select-mesa-btn" data-mesa="{{ mesa }}">
+                          Mesa {{ mesa }}
+                        </button>
+                        {% endfor %}
+                      {% else %}
+                        <div class="list-group-item text-muted">No hay mesas disponibles</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div id="mesaSeleccionada" class="form-text mt-2">Ninguna mesa seleccionada</div>
                 </div>
                 <div class="form-floating">
                   <textarea class="form-control" placeholder="Comentarios adicionales" id="comentarios" name="comentarios" style="height:100px"></textarea>
@@ -123,4 +141,34 @@
     {% endif %}
   </div>
 </section>
+<script>
+  // Manejo de selección de mesa desde la lista plegable
+  document.querySelectorAll('.select-mesa-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var mesa = this.getAttribute('data-mesa');
+      var inputMesa = document.getElementById('mesa');
+      var label = document.getElementById('mesaSeleccionada');
+      inputMesa.value = mesa;
+      label.textContent = 'Mesa seleccionada: ' + mesa;
+      // cerrar el collapse si está abierto
+      var collapseEl = document.getElementById('collapseMesas');
+      if (collapseEl && bootstrap && bootstrap.Collapse) {
+        var c = bootstrap.Collapse.getOrCreateInstance(collapseEl);
+        c.hide();
+      }
+    });
+  });
+
+  // Validar selección de mesa antes de enviar
+  document.getElementById('confirmar-pedido-btn').addEventListener('click', function(e){
+    var inputMesa = document.getElementById('mesa');
+    if(!inputMesa.value){
+      e.preventDefault();
+      alert('Debe seleccionar una mesa disponible.');
+      return;
+    }
+    // Enviar el formulario
+    document.getElementById('confirmar-pedido-form').submit();
+  });
+</script>
 {% endblock %}

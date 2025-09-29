@@ -30,12 +30,21 @@
         </div>
         
         <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
                 {{ form.destacado.label(class="form-label") }}
                 {{ form.destacado(class="form-select") }}
             </div>
-            
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
+                {{ form.stock.label(class="form-label") }}
+                {{ form.stock(class="form-control") }}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.stock_minimo.label(class="form-label") }}
+                {{ form.stock_minimo(class="form-control") }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 mb-3">
                 <label class="form-label">Imagen Actual</label>
                 {% if plato.imagen %}
                 <div>
@@ -51,7 +60,6 @@
                 {% else %}
                 <span class="text-muted">No hay imagen</span>
                 {% endif %}
-                
                 <label for="imagen" class="form-label mt-2">Nueva Imagen</label>
                 <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
                 <small class="text-muted">Formatos: JPG, PNG, JPEG (Máx. 2MB)</small>

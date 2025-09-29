@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Pantalla Cocina - MenuMastery</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -227,8 +228,9 @@
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1><i class="fas fa-utensils"></i> Pantalla de Cocina - MenuMastery</h1>
+  <div class="header d-flex align-items-center justify-content-between">
+    <h1 class="mb-0"><i class="fas fa-utensils"></i> Pantalla de Cocina - MenuMastery</h1>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm"><i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión</a>
   </div>
   
   <div class="filtros">
@@ -411,6 +413,9 @@
                   <i class="fas fa-truck me-1"></i> Entregado
                 </button>
               ` : ''}
+              <a href="/pedido/${pedido.id}" class="btn btn-secondary btn-accion" target="_blank">
+                <i class="fas fa-eye me-1"></i> Ver Detalle
+              </a>
             </div>
           `;
           
@@ -428,18 +433,23 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
           },
           body: JSON.stringify({ estado: nuevoEstado })
         });
         
-        if (response.ok) {
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          mostrarNotificacion(`Estado cambiado a: ${nuevoEstado}`, 'success');
           cargarPedidos(); // Recargar la lista
         } else {
-          alert('Error al cambiar el estado del pedido');
+          console.error('Error response:', result);
+          alert(`Error al cambiar el estado: ${result.error || 'Error desconocido'}`);
         }
       } catch (error) {
         console.error('Error:', error);
-        alert('Error al cambiar el estado del pedido');
+        alert('Error de conexión al cambiar el estado del pedido');
       }
     }
     

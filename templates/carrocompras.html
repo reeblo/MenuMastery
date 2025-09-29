@@ -46,7 +46,7 @@
                                 </thead>
                                 <tbody>
                                     {% for item in items %}
-                                    <tr>
+                                    <tr data-item-id="{{ item.id }}">
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <img src="{{ url_for('static', filename='img/platos/' + (item.plato.imagen or 'default-dish.jpg')) }}" 
@@ -60,19 +60,16 @@
                                         <td class="text-center">${{ "%.2f"|format(item.plato.precio) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center align-items-center">
-                                                <form method="POST" action="{{ url_for('actualizar_cantidad', item_id=item.id) }}" class="d-flex actualizar-cantidad-form">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                                    <button type="submit" class="btn btn-sm btn-outline-secondary" data-action="decrease">
-                                                        <i class="fas fa-minus"></i>
-                                                    </button>
-                                                    <span class="mx-2 cantidad-actual">{{ item.cantidad }}</span>
-                                                    <button type="submit" class="btn btn-sm btn-outline-secondary" data-action="increase">
-                                                        <i class="fas fa-plus"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-cantidad" data-action="decrease" data-item-id="{{ item.id }}">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <span class="mx-2 cantidad-actual" id="cantidad-{{ item.id }}">{{ item.cantidad }}</span>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-cantidad" data-action="increase" data-item-id="{{ item.id }}">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
                                             </div>
                                         </td>
-                                        <td class="text-center subtotal-item">${{ "%.2f"|format(item.plato.precio * item.cantidad) }}</td>
+                                        <td class="text-center subtotal-item" id="subtotal-{{ item.id }}">${{ "%.2f"|format(item.plato.precio * item.cantidad) }}</td>
                                         <td class="text-end">
                                             <form method="POST" action="{{ url_for('eliminar_del_carrito', item_id=item.id) }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -97,17 +94,28 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <input type="hidden" id="in_restaurant_flag" name="in_restaurant" value="False">
 
-                                    <div class="form-floating mb-3">
-                                        <input type="number"
-                                            class="form-control"
-                                            name="mesa"
-                                            id="mesa"
-                                            placeholder="Número de mesa"
-                                            min="1"
-                                            max="50"
-                                            required>
-                                        <label for="mesa">Ingrese el número de mesa, por favor.</label>
+                                    <div class="form-floating mb-3" id="mesa-selector" {% if mesa_reserva_usuario %}style="display:none"{% endif %}>
+                                        <select class="form-select" name="mesa" id="mesa" {% if not mesa_reserva_usuario %}required{% endif %}>
+                                            <option value="" disabled {% if not mesa_reserva_usuario %}selected{% endif %}>Selecciona una mesa disponible</option>
+                                            {% for mesa in mesas_disponibles %}
+                                                <option value="{{ mesa }}" {% if mesa_reserva_usuario and mesa_reserva_usuario == mesa %}selected{% endif %}>Mesa {{ mesa }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="mesa">Selecciona una mesa disponible</label>
                                     </div>
+                                    {% if mesa_reserva_usuario %}
+                                        <div class="alert alert-info" role="alert">
+                                            Tienes una reserva activa. Se asignará automáticamente la mesa <strong>{{ mesa_reserva_usuario }}</strong>.
+                                        </div>
+                                    {% elif not mesas_disponibles or mesas_disponibles|length == 0 %}
+                                        <div class="alert alert-warning" role="alert">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            No hay mesas disponibles en este momento. Intenta más tarde.
+                                        </div>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-primary btn-lg w-100 py-3 mt-4" id="confirmar-pedido-btn" onclick="showLocationPrompt()" {% if not mesa_reserva_usuario and (not mesas_disponibles or mesas_disponibles|length == 0) %}disabled title="No hay mesas disponibles"{% endif %}>
+                                        <i class="fas fa-check-circle me-2"></i> Confirmar Pedido
+                                    </button>
                                 </form>
 
                                 
@@ -127,9 +135,6 @@
                                     <span id="total-general">${{ "%.2f"|format(total) }}</span>
                                 </div>
 
-                                <button type="button" class="btn btn-primary btn-lg w-100 py-3 mt-4" id="confirmar-pedido-btn" onclick="showLocationPrompt()">
-                                    <i class="fas fa-check-circle me-2"></i> Confirmar Pedido
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -140,41 +145,126 @@
     </div>
 </section>
 <!-- Modal para preguntar ubicación -->
-<div class="modal fade" id="locationModal" tabindex="-1" role="dialog" aria-labelledby="locationModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="locationModalLabel">Confirmar Ubicación</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <p>¿Te encuentras actualmente en el restaurante?</p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="handleLocationResponse(false)">No, es para domicilio</button>
-        <button type="button" class="btn btn-primary" onclick="handleLocationResponse(true)">Sí, estoy aquí</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="handleLocationResponse(false)">No, es para domicilio</button>
+        <button type="button" class="btn btn-primary" onclick="handleLocationResponse(true)">Si, estoy aquí</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
+    // Interceptar el submit del formulario para mostrar el modal
     function showLocationPrompt() {
-        $('#locationModal').modal('show'); // Shows the Bootstrap modal
+        // Validar que hay items en el carrito
+        var items = document.querySelectorAll('tbody tr[data-item-id]');
+        if (items.length === 0) {
+            alert('Tu carrito está vacío');
+            return;
+        }
+        
+        // Mostrar modal usando Bootstrap 5
+        var modal = new bootstrap.Modal(document.getElementById('locationModal'));
+        modal.show();
     }
 
     function handleLocationResponse(isInRestaurant) {
-        $('#locationModal').modal('hide'); // Hides the Bootstrap modal
-
+        // Cerrar modal usando Bootstrap 5
+        var modal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+        modal.hide();
+        
         if (isInRestaurant) {
             document.getElementById('in_restaurant_flag').value = 'True';
-            document.getElementById('confirmar-pedido-form').submit(); // Submits the form
+            
+            // Validación: debe haber mesa seleccionada si no hay mesa de reserva
+            var mesaSelect = document.getElementById('mesa');
+            var hasReservaMesa = {{ 'true' if mesa_reserva_usuario else 'false' }};
+            
+            if (!hasReservaMesa) {
+                if (!mesaSelect || !mesaSelect.value) {
+                    alert('Debe seleccionar una mesa disponible.');
+                    return;
+                }
+            }
+            
+            // Enviar el formulario
+            document.getElementById('confirmar-pedido-form').submit();
         } else {
             alert('Próximamente domicilios. Tu pedido no ha sido procesado.');
-            // Optionally, you can redirect or perform other actions here.
         }
     }
+
+    // Validación en tiempo real del botón de confirmar pedido
+    function updateConfirmButton() {
+        var confirmBtn = document.getElementById('confirmar-pedido-btn');
+        var mesaSelect = document.getElementById('mesa');
+        var hasReservaMesa = {{ 'true' if mesa_reserva_usuario else 'false' }};
+        var hasItems = document.querySelectorAll('tbody tr[data-item-id]').length > 0;
+        
+        if (!hasItems) {
+            confirmBtn.disabled = true;
+            confirmBtn.title = 'Tu carrito está vacío';
+            return;
+        }
+        
+        if (!hasReservaMesa) {
+            if (!mesaSelect || !mesaSelect.value) {
+                confirmBtn.disabled = true;
+                confirmBtn.title = 'Debe seleccionar una mesa';
+                return;
+            }
+        }
+        
+        confirmBtn.disabled = false;
+        confirmBtn.title = 'Confirmar pedido';
+    }
+    
+    // Actualizar estado del botón cuando cambie la selección de mesa
+    document.addEventListener('DOMContentLoaded', function() {
+        var mesaSelect = document.getElementById('mesa');
+        if (mesaSelect) {
+            mesaSelect.addEventListener('change', updateConfirmButton);
+        }
+        updateConfirmButton();
+    });
+
+    // AJAX para aumentar/disminuir cantidad
+    document.querySelectorAll('.btn-cantidad').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var itemId = btn.getAttribute('data-item-id');
+            var action = btn.getAttribute('data-action');
+            var csrfToken = document.querySelector('input[name="csrf_token"]').value;
+            fetch(`/actualizar-cantidad/${itemId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `action=${action}&csrf_token=${csrfToken}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`cantidad-${itemId}`).textContent = data.newQuantity;
+                    document.getElementById(`subtotal-${itemId}`).textContent = `$${data.subtotal.toFixed(2)}`;
+                    document.getElementById('subtotal-general').textContent = `$${data.newTotals.subtotal.toFixed(2)}`;
+                    document.getElementById('servicio-general').textContent = `$${data.newTotals.servicio.toFixed(2)}`;
+                    document.getElementById('total-general').textContent = `$${data.newTotals.total.toFixed(2)}`;
+                    
+                    // Actualizar estado del botón después de cambiar cantidades
+                    updateConfirmButton();
+                }
+            });
+        });
+    });
 </script>
 {% endblock %}

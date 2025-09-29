@@ -3,37 +3,66 @@
 {% block title %}Pedidos Listos - Mesero{% endblock %}
 
 {% block content %}
+
 <div class="pedidos-container">
     <h2 class="mb-4">Pedidos Listos para Servir</h2>
-    
-    {% if pedidos %}
+    {% if pedidos_listos %}
     <div class="pedidos-list">
-        {% for pedido in pedidos %}
+        {% for pedido in pedidos_listos %}
         <div class="pedido-card">
             <div class="pedido-header">
                 <h3 class="pedido-title">Pedido #{{ pedido.id }}</h3>
                 <span class="pedido-time">{{ pedido.fecha.strftime('%H:%M') }}</span>
             </div>
             <p class="pedido-mesa"><strong>Mesa:</strong> {{ pedido.mesa or 'No especificada' }}</p>
-            
             <ul class="pedido-items">
                 {% for item in pedido.items %}
                 <li>{{ item.cantidad }}x {{ item.plato.nombre }}</li>
                 {% endfor %}
             </ul>
-            
-            <form method="POST" action="{{ url_for('entregar_pedido', id=pedido.id) }}" class="text-end">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" class="btn btn-success btn-marcar-entregado">
-                    <i class="fas fa-check-circle me-2"></i>Marcar como Entregado
-                </button>
-            </form>
+            <div class="d-flex justify-content-end gap-2">
+                <form method="POST" action="{{ url_for('entregar_pedido', id=pedido.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-success btn-marcar-entregado">
+                        <i class="fas fa-check-circle me-2"></i>Marcar como Entregado
+                    </button>
+                </form>
+                <a href="{{ url_for('detalle_pedido', pedido_id=pedido.id) }}" class="btn btn-info">
+                    <i class="fas fa-eye me-1"></i> Ver Detalle
+                </a>
+            </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
     <div class="alert alert-info">
         No hay pedidos listos para servir en este momento.
+    </div>
+    {% endif %}
+
+    <hr class="my-5">
+    <h2 class="mb-4">Tus Pedidos Realizados</h2>
+    {% if pedidos_mesero %}
+    <div class="pedidos-list">
+        {% for pedido in pedidos_mesero %}
+        <div class="pedido-card">
+            <div class="pedido-header">
+                <h3 class="pedido-title">Pedido #{{ pedido.id }}</h3>
+                <span class="pedido-time">{{ pedido.fecha.strftime('%H:%M') }}</span>
+            </div>
+            <p class="pedido-mesa"><strong>Mesa:</strong> {{ pedido.mesa or 'No especificada' }}</p>
+            <span class="badge bg-info">Estado: {{ pedido.estado }}</span>
+            <ul class="pedido-items">
+                {% for item in pedido.items %}
+                <li>{{ item.cantidad }}x {{ item.plato.nombre }}</li>
+                {% endfor %}
+            </ul>
+    </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No has realizado pedidos como mesero.
     </div>
     {% endif %}
 </div>

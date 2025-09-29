@@ -1,0 +1,205 @@
+# Respaldo automático de app.py
+# Fecha: 2025-09-28
+# Este archivo es una copia de seguridad antes de realizar cambios importantes.
+
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
+import os
+from flask_login import LoginManager
+from flask_login import UserMixin
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, IntegerField, SubmitField, DateField, TimeField
+from wtforms.validators import DataRequired, Email
+from wtforms import SelectField
+from flask_login import login_required, current_user
+from flask_login import login_user, current_user, login_required, logout_user
+from flask_wtf.csrf import CSRFProtect
+from werkzeug.utils import secure_filename
+from wtforms import StringField, PasswordField, SubmitField
+from enum import Enum
+from flask import Response
+import time
+from flask import jsonify
+from flask_login import logout_user
+from functools import wraps
+from decimal import Decimal, ROUND_HALF_UP
+
+from wtforms import (
+	StringField,
+	PasswordField,
+	BooleanField,
+	SubmitField,
+	validators
+)
+from wtforms.validators import (
+	DataRequired,
+	Email,
+	EqualTo,
+	Length
+)
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = '12345'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'menumastery.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+csrf = CSRFProtect(app)
+
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+login_manager.login_message = 'Por favor, inicia sesión para acceder a esta página.'
+login_manager.login_message_category = 'info'  # o 'warning', 'danger', etc.
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'img', 'platos')
+UPLOAD_FOLDER_USERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'img_users')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER_USERS'] = UPLOAD_FOLDER_USERS
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 
+
+class LoginForm(FlaskForm):
+	email = StringField('Email', validators=[DataRequired(), Email()])  
+	password = PasswordField('Contraseña', validators=[DataRequired()])
+	submit = SubmitField('Iniciar sesión')
+
+class RolUsuario(Enum):
+	ADMIN = 'admin'
+	EMPLEADO = 'empleado'
+	CLIENTE = 'cliente'
+
+class Usuario(db.Model, UserMixin):
+	__tablename__ = 'usuario'
+	id = db.Column(db.Integer, primary_key=True)
+	nombre = db.Column(db.String(100), nullable=False)
+	email = db.Column(db.String(100), unique=True, nullable=False)
+	password = db.Column(db.String(200), nullable=False)
+	rol = db.Column(db.String(20), default= RolUsuario.CLIENTE.value) 
+	fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+	foto = db.Column(db.String(200), default='default.jpeg')
+	tipo_empleado = db.Column(db.String(20))
+
+class RegistroForm(FlaskForm):
+	nombre = StringField('Nombre completo', validators=[DataRequired()])
+	email = StringField('Email', validators=[
+		DataRequired(),
+		Email(message='Ingresa un email válido')
+	])
+	confirm_email = StringField('Confirmar Email', validators=[
+		DataRequired(),
+		EqualTo('email', message='Los emails deben coincidir')
+	])
+	password = PasswordField('Contraseña', validators=[
+		DataRequired(),
+		Length(min=8, message='La contraseña debe tener al menos 8 caracteres')
+	])
+	confirm_password = PasswordField('Confirmar Contraseña', validators=[
+		DataRequired(),
+		EqualTo('password', message='Las contraseñas deben coincidir')
+	])
+	terms = BooleanField('Acepto los términos', validators=[
+		DataRequired(message='Debes aceptar los términos y condiciones')
+	])
+	submit = SubmitField('Registrarse')
+
+class ReservaForm(FlaskForm):
+	fecha = DateField('Fecha', format='%Y-%m-%d', validators=[DataRequired()])  
+	hora = SelectField('Hora', choices=[
+		('12:00', '12:00 PM'),
+		('13:00', '1:00 PM'),
+		('14:00', '2:00 PM'),
+		('15:00', '3:00 PM'),
+		('18:00', '6:00 PM'),
+		('19:00', '7:00 PM'),
+		('20:00', '8:00 PM')
+	], validators=[DataRequired()])
+	personas = SelectField('Numero de personas', choices=[
+		(1, '1 persona'),
+		(2, '2 personas'),
+		(3, '3 personas'),
+		(4, '4 personas'),
+		(5, '5 personas'),
+		(6, '6 personas'),
+		(7, '7 personas'),
+		(8, '8 personas'),
+		(9, '9+ personas (reserva especial)')
+	], validators=[DataRequired()])
+	mesa = SelectField('Mesa preferida', choices=[
+		('', 'Sin preferencia'),
+		('1', 'Mesa 1 - Ventana'),
+		('2', 'Mesa 2 - Ventana'),
+		('3', 'Mesa 3 - Centro'),
+		('4', 'Mesa 4 - Centro'),
+		('5', 'Mesa 5 - Terraza'),
+		('6', 'Mesa 6 - Terraza'),
+		('7', 'Mesa 7 - Privada'),
+		('8', 'Mesa 8 - Privada')
+	])
+	comentarios = TextAreaField('Comentarios adicionales') 
+	submit = SubmitField('Confirmar Reserva')
+
+class Categoria(db.Model): 
+	id = db.Column(db.Integer, primary_key=True)
+	nombre = db.Column(db.String(50), nullable=False, unique=True)
+	descripcion = db.Column(db.String(200))
+
+class PlatoForm(FlaskForm):
+	nombre = StringField('Nombre', validators=[DataRequired()])
+	descripcion = TextAreaField('Descripción')
+	precio = IntegerField('Precio', validators=[DataRequired()])
+	stock = IntegerField('Stock disponible', validators=[DataRequired()])
+	stock_minimo = IntegerField('Stock mínimo', validators=[DataRequired()])
+	destacado = SelectField('Destacado', choices=[(False, 'No'), (True, 'Si')], coerce=bool)
+	categoria_id = SelectField('Categoría', coerce=int, validators=[DataRequired()])
+	submit = SubmitField('Guardar Plato')
+
+class Plato(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	nombre = db.Column(db.String(100), nullable=False)
+	descripcion = db.Column(db.Text)
+	precio = db.Column(db.Float, nullable=False)
+	imagen = db.Column(db.String(255)) 
+	destacado = db.Column(db.Boolean, default=False)
+	agotado = db.Column(db.Boolean, default=False)
+	categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
+	categoria = db.relationship('Categoria', backref='platos') 
+	stock = db.Column(db.Integer, default=0)
+	stock_minimo = db.Column(db.Integer, default=5) 
+	fecha_actualizacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Pedido(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+	usuario = db.relationship('Usuario', backref='pedidos')
+	mesa = db.Column(db.String(20)) 
+	total = db.Column(db.Float, nullable=False)
+	estado = db.Column(db.String(20), default='pendiente')
+	fecha = db.Column(db.DateTime, default=datetime.utcnow)
+	items = db.relationship('PedidoItem', backref='pedido', lazy=True)
+
+class PedidoItem(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	pedido_id = db.Column(db.Integer, db.ForeignKey('pedido.id'), nullable=False)
+	plato_id = db.Column(db.Integer, db.ForeignKey('plato.id'), nullable=False)
+	cantidad = db.Column(db.Integer, nullable=False)
+	precio_unitario = db.Column(db.Float, nullable=False)
+	plato = db.relationship('Plato')
+	comentarios = db.Column(db.Text)
+
+class Reserva(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	fecha = db.Column(db.DateTime, nullable=False)
+	personas = db.Column(db.Integer, nullable=False)
+	comentarios = db.Column(db.Text)
+	estado = db.Column(db.String(20), default='pendiente')
+	usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+	mesa = db.Column(db.String(10))
+	usuario = db.relationship('Usuario', backref='reservas')
+	fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+class CarritoItem(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+

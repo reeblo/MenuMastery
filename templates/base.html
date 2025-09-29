@@ -47,7 +47,15 @@
                         </a>
 
                         <a href="{{ url_for('perfil') }}" id="usuarioIcon" class="nav-link ms-3" aria-label="Perfil de usuario">
-                            <img src="{{ url_for('static', filename='img/usuario.webp') }}" alt="Perfil de usuario" class="icon" width="23" height="23" loading="lazy" />
+                            {% if current_user.is_authenticated and current_user.rol == 'cliente' %}
+                                {% if current_user.foto and current_user.foto != 'default.jpeg' %}
+                                    <img src="{{ url_for('serve_user_image', filename=current_user.foto) }}" alt="Perfil de usuario" class="icon rounded-circle" width="23" height="23" loading="lazy" />
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='img/usuario.webp') }}" alt="Perfil de usuario" class="icon rounded-circle" width="23" height="23" loading="lazy" />
+                                {% endif %}
+                            {% else %}
+                                <img src="{{ url_for('static', filename='img/usuario.webp') }}" alt="Perfil de usuario" class="icon rounded-circle" width="23" height="23" loading="lazy" />
+                            {% endif %}
                         </a>
 
                         {% if current_user.is_authenticated %}
@@ -64,6 +72,18 @@
 
     <!-- Contenido dinámico -->
     <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 
