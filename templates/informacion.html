@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Información - MenuMastery{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold text-white mb-4">
+                    <i class="fas fa-info-circle me-3"></i>Acerca de MenuMastery
+                </h1>
+                <p class="lead text-white-50 mb-4">
+                    Descubre la historia, misión y valores que nos hacen únicos en el mundo gastronómico.
+                </p>
+                <a href="{{ url_for('inicio') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>Volver al Inicio
+                </a>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="{{ url_for('static', filename='img/logo empresa.webp') }}" 
+                     alt="MenuMastery Logo" class="img-fluid" style="max-height: 300px;">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Información Principal -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-5">
+                        <h2 class="h3 mb-4 text-primary">
+                            <i class="fas fa-heart me-2"></i>Nuestra Historia
+                        </h2>
+                        <p class="lead mb-4">
+                            MenuMastery nació de la pasión por la gastronomía y el deseo de crear experiencias 
+                            culinarias únicas que conecten a las personas a través de la comida.
+                        </p>
+                        <p class="mb-4">
+                            Desde nuestros humildes comienzos, hemos crecido hasta convertirnos en un referente 
+                            de la cocina moderna, combinando tradición e innovación en cada plato que servimos.
+                        </p>
+
+                        <h3 class="h4 mb-3 text-primary">
+                            <i class="fas fa-bullseye me-2"></i>Nuestra Misión
+                        </h3>
+                        <p class="mb-4">
+                            Ofrecer experiencias gastronómicas excepcionales que deleiten los sentidos y 
+                            creen momentos memorables para nuestros comensales, utilizando ingredientes 
+                            frescos y técnicas culinarias de vanguardia.
+                        </p>
+
+                        <h3 class="h4 mb-3 text-primary">
+                            <i class="fas fa-star me-2"></i>Nuestros Valores
+                        </h3>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-leaf text-success me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Calidad</h5>
+                                        <p class="text-muted mb-0">Ingredientes frescos y de la más alta calidad en cada preparación.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-users text-info me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Servicio</h5>
+                                        <p class="text-muted mb-0">Atención personalizada y cálida para cada uno de nuestros clientes.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-lightbulb text-warning me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Innovación</h5>
+                                        <p class="text-muted mb-0">Creatividad constante en nuestros platos y técnicas culinarias.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-handshake text-primary me-3 mt-1"></i>
+                                    <div>
+                                        <h5>Compromiso</h5>
+                                        <p class="text-muted mb-0">Dedicación total a la satisfacción de nuestros comensales.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 class="h4 mb-3 text-primary">
+                            <i class="fas fa-utensils me-2"></i>Nuestra Cocina
+                        </h3>
+                        <p class="mb-4">
+                            Nuestro chef ejecutivo y su equipo trabajan incansablemente para crear un menú 
+                            que refleje la diversidad culinaria, desde platos tradicionales hasta creaciones 
+                            contemporáneas que sorprenden y deleitan.
+                        </p>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>¿Sabías que?</strong> Todos nuestros platos son preparados al momento 
+                            con ingredientes seleccionados cuidadosamente por nuestro equipo de compras.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Información del Restaurante -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                        <h4>Ubicación</h4>
+                        <p class="text-muted">43, Tesalia, Huila</p>
+                        <p class="small">En el corazón de la ciudad, fácilmente accesible y con estacionamiento disponible.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                        <h4>Horarios</h4>
+                        <p class="text-muted">11:00 AM - 9:00 PM</p>
+                        <p class="small">Abierto todos los días para brindarte la mejor experiencia gastronómica.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-phone fa-3x text-warning mb-3"></i>
+                        <h4>Contacto</h4>
+                        <p class="text-muted">+57 300 123 4567</p>
+                        <p class="small">Reservas y consultas disponibles por WhatsApp y teléfono.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Servicios -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="h3 mb-4 text-primary">
+                    <i class="fas fa-concierge-bell me-2"></i>Nuestros Servicios
+                </h2>
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-calendar-check fa-2x text-primary me-3"></i>
+                            <div class="text-start">
+                                <h5>Reservas Online</h5>
+                                <p class="text-muted mb-0">Reserva tu mesa desde la comodidad de tu hogar</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-shopping-cart fa-2x text-success me-3"></i>
+                            <div class="text-start">
+                                <h5>Pedidos en Línea</h5>
+                                <p class="text-muted mb-0">Ordena tus platos favoritos desde nuestro menú digital</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-swimming-pool fa-2x text-info me-3"></i>
+                            <div class="text-start">
+                                <h5>Área de Piscina</h5>
+                                <p class="text-muted mb-0">Disfruta de un ambiente relajante con piscina</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-users fa-2x text-warning me-3"></i>
+                            <div class="text-start">
+                                <h5>Eventos Especiales</h5>
+                                <p class="text-muted mb-0">Celebraciones y eventos corporativos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="h3 text-white mb-4">¿Listo para una experiencia gastronómica única?</h2>
+                <p class="lead text-white-50 mb-4">
+                    Únete a nosotros y descubre por qué MenuMastery es la elección preferida de los amantes de la buena comida.
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('menu') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-utensils me-2"></i>Ver Menú
+                    </a>
+                    <a href="{{ url_for('reservas') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-calendar-plus me-2"></i>Hacer Reserva
+                    </a>
+                    <a href="{{ url_for('contacto') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-envelope me-2"></i>Contactar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

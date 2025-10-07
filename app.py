@@ -66,6 +66,7 @@ class RolUsuario(Enum):
     ADMIN = 'admin'
     EMPLEADO = 'empleado'
     CLIENTE = 'cliente'
+    USUARIO_MANAGER = 'usuario_manager'
 
 class Usuario(db.Model, UserMixin):
     __tablename__ = 'usuario'
@@ -247,9 +248,118 @@ class RegistroActividad(db.Model):
 def make_session_permanent():
     session.permanent = True
 
+@app.before_request
+def ejecutar_limpieza_automatica():
+    """Ejecuta limpieza automática una vez al día"""
+    try:
+        # Verificar si ya se ejecutó la limpieza hoy
+        ultima_limpieza = session.get('ultima_limpieza_automatica')
+        hoy = datetime.utcnow().date()
+        
+        if ultima_limpieza != str(hoy):
+            # Ejecutar limpieza automática
+            limpiar_datos_antiguos()
+            # Marcar que se ejecutó hoy
+            session['ultima_limpieza_automatica'] = str(hoy)
+    except Exception:
+        # Si hay error, continuar normalmente
+        pass
+
+@app.before_request
+def check_maintenance_mode():
+    # Rutas que siempre deben estar disponibles durante mantenimiento
+    allowed_routes = ['login', 'static', 'logout']
+    
+    # Rutas administrativas que solo los admins pueden acceder durante mantenimiento
+    admin_routes = ['admin_panel', 'configuracion_sistema', 'gestion_platos', 'agregar_plato', 
+                   'editar_plato', 'eliminar_plato', 'gestion_inventario', 'ajustar_inventario', 
+                   'historial_inventario', 'reportes']
+    
+    # Verificar si la ruta actual está permitida para todos
+    if request.endpoint in allowed_routes:
+        return
+    
+    # Verificar modo mantenimiento
+    try:
+        config = get_configuracion()
+        if config.maintenance_mode:
+            # Si es una ruta administrativa, verificar que sea admin
+            if request.endpoint in admin_routes:
+                if not current_user.is_authenticated or current_user.rol != 'admin':
+                    return render_template('maintenance.html')
+            # Para todas las demás rutas, mostrar página de mantenimiento
+            elif not current_user.is_authenticated or current_user.rol != 'admin':
+                return render_template('maintenance.html')
+    except Exception:
+        # Si hay error al obtener configuración, continuar normalmente
+        pass
+
 
 def redondear(valor):
     return float(Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
+# Función para limpiar datos antiguos
+def limpiar_datos_antiguos():
+    """Limpia reservas y pedidos antiguos según la configuración del sistema"""
+    try:
+        config = get_configuracion()
+        
+        if not config.limpieza_automatica_activa:
+            return {"success": True, "message": "Limpieza automática desactivada"}
+        
+        fecha_limite_reservas = datetime.utcnow() - timedelta(days=config.reservas_dias_limpieza)
+        fecha_limite_pedidos = datetime.utcnow() - timedelta(days=config.pedidos_dias_limpieza)
+        
+        # Limpiar reservas antiguas (solo las completadas o canceladas)
+        reservas_eliminadas = Reserva.query.filter(
+            Reserva.fecha < fecha_limite_reservas,
+            Reserva.estado.in_(['completada', 'cancelada'])
+        ).count()
+        
+        Reserva.query.filter(
+            Reserva.fecha < fecha_limite_reservas,
+            Reserva.estado.in_(['completada', 'cancelada'])
+        ).delete(synchronize_session=False)
+        
+        # Limpiar pedidos antiguos (solo los entregados)
+        pedidos_eliminados = Pedido.query.filter(
+            Pedido.fecha < fecha_limite_pedidos,
+            Pedido.estado == 'entregado'
+        ).count()
+        
+        Pedido.query.filter(
+            Pedido.fecha < fecha_limite_pedidos,
+            Pedido.estado == 'entregado'
+        ).delete(synchronize_session=False)
+        
+        # Limpiar notificaciones antiguas (más de 7 días)
+        notificaciones_eliminadas = Notificacion.query.filter(
+            Notificacion.fecha < datetime.utcnow() - timedelta(days=7)
+        ).count()
+        
+        Notificacion.query.filter(
+            Notificacion.fecha < datetime.utcnow() - timedelta(days=7)
+        ).delete(synchronize_session=False)
+        
+        # Limpiar movimientos de inventario antiguos (más de 6 meses)
+        movimientos_eliminados = MovimientoInventario.query.filter(
+            MovimientoInventario.fecha < datetime.utcnow() - timedelta(days=180)
+        ).count()
+        
+        MovimientoInventario.query.filter(
+            MovimientoInventario.fecha < datetime.utcnow() - timedelta(days=180)
+        ).delete(synchronize_session=False)
+        
+        db.session.commit()
+        
+        return {
+            "success": True,
+            "message": f"Limpieza completada: {reservas_eliminadas} reservas, {pedidos_eliminados} pedidos, {notificaciones_eliminadas} notificaciones, {movimientos_eliminados} movimientos eliminados"
+        }
+        
+    except Exception as e:
+        db.session.rollback()
+        return {"success": False, "message": f"Error en limpieza: {str(e)}"}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -301,10 +411,21 @@ def crear_admin_inicial():
             )
             db.session.add(mesero)
 
+        # Usuario Manager
+        if not Usuario.query.filter_by(email='usermanager@menumastery.com').first():
+            usuario_manager = Usuario(
+                nombre='Usuario Manager',
+                email='usermanager@menumastery.com',
+                password=generate_password_hash('UserManager123'),
+                rol=RolUsuario.USUARIO_MANAGER.value
+            )
+            db.session.add(usuario_manager)
+
         db.session.commit()
         print("Usuarios iniciales creados:")
         print("- Cocinero: cocinero@menumastery.com / Cocinero123")
         print("- Mesero: mesero@menumastery.com / Mesero123")
+        print("- Usuario Manager: usermanager@menumastery.com / UserManager123")
 
 #modulo administrador
 @app.route('/admin/panel')
@@ -532,6 +653,21 @@ def rol_requerido(rol_necesario):
                 flash("Debes iniciar sesión para acceder a esta página.", "warning")
                 return redirect(url_for('login'))
             if current_user.rol != rol_necesario:
+                flash("No tienes permiso para acceder a esta sección.", "danger")
+                return redirect(url_for('inicio'))
+            return func(*args, **kwargs)
+        return envoltura
+    return decorador
+
+# decorador para múltiples roles
+def roles_requeridos(*roles_permitidos):
+    def decorador(func):
+        @wraps(func)
+        def envoltura(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash("Debes iniciar sesión para acceder a esta página.", "warning")
+                return redirect(url_for('login'))
+            if current_user.rol not in roles_permitidos:
                 flash("No tienes permiso para acceder a esta sección.", "danger")
                 return redirect(url_for('inicio'))
             return func(*args, **kwargs)
@@ -913,6 +1049,10 @@ def pedidos_mesero_count():
 @app.route('/')
 def inicio():
     return render_template('index.html')
+
+@app.route('/informacion')
+def informacion():
+    return render_template('informacion.html')
 
 @app.route('/ping-session')
 def ping_session():
@@ -1381,6 +1521,8 @@ def login():
                 return redirect(url_for('pantalla_cocina'))
             else:
                 return redirect(url_for('empleado_dashboard'))
+        elif current_user.rol == RolUsuario.USUARIO_MANAGER.value:
+            return redirect(url_for('usuario_manager_dashboard'))
         return redirect(url_for('inicio'))
     
     form = LoginForm()
@@ -1398,6 +1540,8 @@ def login():
                     return redirect(url_for('pantalla_cocina'))
                 else:
                     return redirect(url_for('empleado_dashboard'))
+            elif user.rol == RolUsuario.USUARIO_MANAGER.value:
+                return redirect(url_for('usuario_manager_dashboard'))
             return redirect(url_for('inicio'))
         
         flash('Credenciales incorrectas', 'danger')
@@ -1585,29 +1729,139 @@ def historial_inventario():
     movimientos = MovimientoInventario.query.order_by(MovimientoInventario.fecha.desc()).all()
     return render_template('admin/historial_inventario.html', movimientos=movimientos)
 
-# Añadir a app.py
-@app.route('/admin/usuarios')
+# Módulo de Usuario Manager
+@app.route('/usuario-manager/dashboard')
 @login_required
-def gestion_usuarios():
-    if current_user.rol != 'admin':
+def usuario_manager_dashboard():
+    if current_user.rol != RolUsuario.USUARIO_MANAGER.value:
         flash('Acceso no autorizado', 'danger')
         return redirect(url_for('inicio'))
     
-    usuarios = Usuario.query.order_by(Usuario.nombre).all()
-    return render_template('admin/gestion_usuarios.html', usuarios=usuarios)
+    # Estadísticas de usuarios
+    total_usuarios = Usuario.query.count()
+    usuarios_activos = Usuario.query.filter(Usuario.rol != 'admin').count()
+    empleados = Usuario.query.filter_by(rol=RolUsuario.EMPLEADO.value).count()
+    clientes = Usuario.query.filter_by(rol=RolUsuario.CLIENTE.value).count()
+    
+    return render_template('usuario_manager/dashboard.html',
+                        total_usuarios=total_usuarios,
+                        usuarios_activos=usuarios_activos,
+                        empleados=empleados,
+                        clientes=clientes)
 
-@app.route('/admin/usuarios/editar/<int:id>', methods=['GET', 'POST'])
+@app.route('/usuario-manager/usuarios')
+@login_required
+def gestion_usuarios():
+    if current_user.rol != RolUsuario.USUARIO_MANAGER.value:
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    usuarios = Usuario.query.filter(Usuario.rol != 'admin').order_by(Usuario.nombre).all()
+    return render_template('usuario_manager/gestion_usuarios.html', usuarios=usuarios)
+
+@app.route('/usuario-manager/usuarios/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_usuario(id):
+    if current_user.rol != RolUsuario.USUARIO_MANAGER.value:
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
     usuario = Usuario.query.get_or_404(id)
-    # Implementar lógica de edición
-    return render_template('admin/editar_usuario.html', usuario=usuario)
+    
+    # No permitir editar administradores
+    if usuario.rol == 'admin':
+        flash('No se puede editar un administrador', 'danger')
+        return redirect(url_for('gestion_usuarios'))
+    
+    if request.method == 'POST':
+        try:
+            usuario.nombre = request.form['nombre']
+            usuario.email = request.form['email']
+            usuario.rol = request.form['rol']
+            
+            # Si es empleado, asignar tipo
+            if usuario.rol == RolUsuario.EMPLEADO.value:
+                usuario.tipo_empleado = request.form.get('tipo_empleado')
+            else:
+                usuario.tipo_empleado = None
+            
+            db.session.commit()
+            flash('Usuario actualizado exitosamente', 'success')
+            return redirect(url_for('gestion_usuarios'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al actualizar usuario: {str(e)}', 'danger')
+    
+    return render_template('usuario_manager/editar_usuario.html', usuario=usuario)
 
-@app.route('/admin/usuarios/eliminar/<int:id>', methods=['POST'])
+@app.route('/usuario-manager/usuarios/eliminar/<int:id>', methods=['POST'])
 @login_required
 def eliminar_usuario(id):
-    # Implementar lógica de eliminación segura
+    if current_user.rol != RolUsuario.USUARIO_MANAGER.value:
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    usuario = Usuario.query.get_or_404(id)
+    
+    # No permitir eliminar administradores
+    if usuario.rol == 'admin':
+        flash('No se puede eliminar un administrador', 'danger')
+        return redirect(url_for('gestion_usuarios'))
+    
+    try:
+        # Verificar si el usuario tiene pedidos o reservas
+        pedidos = Pedido.query.filter_by(usuario_id=usuario.id).count()
+        reservas = Reserva.query.filter_by(usuario_id=usuario.id).count()
+        
+        if pedidos > 0 or reservas > 0:
+            flash('No se puede eliminar un usuario con pedidos o reservas activas', 'warning')
+            return redirect(url_for('gestion_usuarios'))
+        
+        db.session.delete(usuario)
+        db.session.commit()
+        flash('Usuario eliminado exitosamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar usuario: {str(e)}', 'danger')
+    
     return redirect(url_for('gestion_usuarios'))
+
+@app.route('/usuario-manager/usuarios/crear', methods=['GET', 'POST'])
+@login_required
+def crear_usuario():
+    if current_user.rol != RolUsuario.USUARIO_MANAGER.value:
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    if request.method == 'POST':
+        try:
+            # Verificar si el email ya existe
+            if Usuario.query.filter_by(email=request.form['email']).first():
+                flash('Este correo ya está registrado', 'danger')
+                return redirect(url_for('crear_usuario'))
+            
+            nuevo_usuario = Usuario(
+                nombre=request.form['nombre'],
+                email=request.form['email'],
+                password=generate_password_hash(request.form['password']),
+                rol=request.form['rol']
+            )
+            
+            # Si es empleado, asignar tipo
+            if nuevo_usuario.rol == RolUsuario.EMPLEADO.value:
+                nuevo_usuario.tipo_empleado = request.form.get('tipo_empleado')
+            
+            db.session.add(nuevo_usuario)
+            db.session.commit()
+            
+            flash('Usuario creado exitosamente', 'success')
+            return redirect(url_for('gestion_usuarios'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear usuario: {str(e)}', 'danger')
+    
+    return render_template('usuario_manager/crear_usuario.html')
 
 @app.route('/admin/reportes')
 @login_required
@@ -1652,6 +1906,10 @@ class Configuracion(db.Model):
     admin_email = db.Column(db.String(100), default="admin@ejemplo.com")
     theme_color = db.Column(db.String(7), default="#3498db")
     maintenance_mode = db.Column(db.Boolean, default=False)
+    # Configuración de limpieza automática
+    reservas_dias_limpieza = db.Column(db.Integer, default=30)  # Días después de los cuales limpiar reservas
+    pedidos_dias_limpieza = db.Column(db.Integer, default=90)   # Días después de los cuales limpiar pedidos
+    limpieza_automatica_activa = db.Column(db.Boolean, default=True)  # Activar/desactivar limpieza automática
 
 # FunciÃ³n para obtener la configuración actual (singleton)
 def get_configuracion():
@@ -1670,7 +1928,10 @@ def inject_config():
         site_name=config.site_name,
         admin_email=config.admin_email,
         theme_color=config.theme_color,
-        maintenance_mode=config.maintenance_mode
+        maintenance_mode=config.maintenance_mode,
+        reservas_dias_limpieza=config.reservas_dias_limpieza,
+        pedidos_dias_limpieza=config.pedidos_dias_limpieza,
+        limpieza_automatica_activa=config.limpieza_automatica_activa
     )
 
 @app.route('/admin/configuracion', methods=['GET', 'POST'])
@@ -1686,11 +1947,48 @@ def configuracion_sistema():
         config.admin_email = request.form.get('adminEmail', config.admin_email)
         config.theme_color = request.form.get('themeColor', config.theme_color)
         config.maintenance_mode = request.form.get('maintenanceMode') == 'on'
+        
+        # Configuración de limpieza automática
+        config.reservas_dias_limpieza = int(request.form.get('reservasDiasLimpieza', config.reservas_dias_limpieza))
+        config.pedidos_dias_limpieza = int(request.form.get('pedidosDiasLimpieza', config.pedidos_dias_limpieza))
+        config.limpieza_automatica_activa = request.form.get('limpiezaAutomaticaActiva') == 'on'
+        
         db.session.commit()
         flash('configuración actualizada correctamente', 'success')
         return redirect(url_for('configuracion_sistema'))
 
     return render_template('admin/configuracion.html', config=config)
+
+@app.route('/admin/limpiar-datos', methods=['POST'])
+@login_required
+def limpiar_datos_manual():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    resultado = limpiar_datos_antiguos()
+    
+    if resultado['success']:
+        flash(resultado['message'], 'success')
+    else:
+        flash(resultado['message'], 'danger')
+    
+    return redirect(url_for('configuracion_sistema'))
+
+@app.route('/admin/migrar-db')
+@login_required
+def migrar_base_datos():
+    if current_user.rol != 'admin':
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('inicio'))
+    
+    try:
+        migrar_configuracion()
+        flash('Migración de base de datos completada exitosamente', 'success')
+    except Exception as e:
+        flash(f'Error en migración: {str(e)}', 'danger')
+    
+    return redirect(url_for('configuracion_sistema'))
 
 #prueba cosina
 # Ruta para la pantalla de cocina
@@ -2018,9 +2316,42 @@ def fix_category_typo():
             return 'Typo fixed!'
         return 'Typo not found.'
 
+def migrar_configuracion():
+    """Migra la tabla configuracion para agregar las nuevas columnas"""
+    try:
+        # Verificar si las columnas ya existen
+        inspector = db.inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('configuracion')]
+        
+        # Agregar columnas que no existen
+        if 'reservas_dias_limpieza' not in columns:
+            db.engine.execute('ALTER TABLE configuracion ADD COLUMN reservas_dias_limpieza INTEGER DEFAULT 30')
+            print("Columna reservas_dias_limpieza agregada")
+        
+        if 'pedidos_dias_limpieza' not in columns:
+            db.engine.execute('ALTER TABLE configuracion ADD COLUMN pedidos_dias_limpieza INTEGER DEFAULT 90')
+            print("Columna pedidos_dias_limpieza agregada")
+        
+        if 'limpieza_automatica_activa' not in columns:
+            db.engine.execute('ALTER TABLE configuracion ADD COLUMN limpieza_automatica_activa BOOLEAN DEFAULT 1')
+            print("Columna limpieza_automatica_activa agregada")
+        
+        print("Migración de configuración completada exitosamente")
+        
+    except Exception as e:
+        print(f"Error en migración: {str(e)}")
+        # Si hay error, intentar crear la tabla desde cero
+        try:
+            db.drop_all()
+            db.create_all()
+            print("Tablas recreadas desde cero")
+        except Exception as e2:
+            print(f"Error al recrear tablas: {str(e2)}")
+
 if __name__ == '__main__':    
     with app.app_context():
         db.create_all()  
+        migrar_configuracion()  # Ejecutar migración
         agregar_datos_iniciales()  
         crear_admin_inicial() 
     app.run(debug=True)

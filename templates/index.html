@@ -105,40 +105,29 @@
         </div>
     </div>
 
-    <!-- Sección Sobre Nosotros -->
-    <section class="about-section py-5 mt-5">
-    <div class="container">
-        <div class="row align-items-center g-5">
-        
-        <!-- Texto -->
-        <div class="col-lg-6 order-2 order-lg-1">
-            <h2 class="about-title mb-4">Sobre Nosotros</h2>
-            <p class="lead">
-            En <strong>MenuMastery</strong> transformamos cada comida en una experiencia inolvidable. 
-            Nuestra cocina fusiona tradición y vanguardia, cuidando cada detalle desde la selección 
-            de ingredientes frescos hasta la presentación en tu mesa.
-            </p>
-            <p class="text-muted">
-            Somos más que un restaurante: somos un espacio para compartir, celebrar y disfrutar 
-            con quienes más quieres. Nuestro compromiso es ofrecerte hospitalidad, excelencia y 
-            momentos que queden en tu memoria.
-            </p>
-            <a href="/reservas" class="btn btn-primary mt-3">
-            <i class="fas fa-utensils me-2"></i>Descubre nuestra experiencia
-            </a>
-        </div>
-
-        <!-- Imagen -->
-        <div class="col-lg-6 order-1 order-lg-2">
-            <div class="about-img-wrapper shadow-sm rounded-3 overflow-hidden">
-            <img src="{{ url_for('static', filename='/img/equipo de trabajo .jpg') }}" 
-                alt="Equipo MenuMastery trabajando en cocina" 
-                class="img-fluid w-100 h-100" 
-                style="object-fit: cover; min-height: 350px;">
+    <!-- Call to Action -->
+    <section class="py-5 mt-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="h3 text-white mb-4">¿Listo para una experiencia gastronómica única?</h2>
+                    <p class="lead text-white-50 mb-4">
+                        Descubre más sobre nosotros y reserva tu mesa para vivir momentos inolvidables.
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center flex-wrap">
+                        <a href="{{ url_for('informacion') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-info-circle me-2"></i>Conoce Más
+                        </a>
+                        <a href="{{ url_for('menu') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-utensils me-2"></i>Ver Menú
+                        </a>
+                        <a href="{{ url_for('reservas') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-calendar-plus me-2"></i>Reservar Mesa
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-        </div>
-    </div>
     </section>
 
 

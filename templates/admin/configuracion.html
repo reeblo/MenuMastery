@@ -7,6 +7,7 @@
     </div>
     <div class="card-body">
       <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="mb-3">
           <label for="siteName" class="form-label">Nombre del sitio</label>
           <input type="text" class="form-control" id="siteName" name="siteName" value="{{ config.site_name }}">
@@ -26,9 +27,75 @@
             <option value="on" {% if config.maintenance_mode %}selected{% endif %}>Activado</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        
+        <hr class="my-4">
+        <h5 class="mb-3">Configuración de Limpieza Automática</h5>
+        
+        <div class="mb-3">
+          <label for="limpiezaAutomaticaActiva" class="form-label">Limpieza automática</label>
+          <select class="form-select" id="limpiezaAutomaticaActiva" name="limpiezaAutomaticaActiva">
+            <option value="on" {% if config.limpieza_automatica_activa %}selected{% endif %}>Activada</option>
+            <option value="off" {% if not config.limpieza_automatica_activa %}selected{% endif %}>Desactivada</option>
+          </select>
+          <div class="form-text">Elimina automáticamente datos antiguos para mantener el sistema optimizado</div>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="reservasDiasLimpieza" class="form-label">Días para limpiar reservas</label>
+            <input type="number" class="form-control" id="reservasDiasLimpieza" name="reservasDiasLimpieza" 
+                   value="{{ config.reservas_dias_limpieza }}" min="1" max="365">
+            <div class="form-text">Reservas completadas/canceladas más antiguas serán eliminadas</div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="pedidosDiasLimpieza" class="form-label">Días para limpiar pedidos</label>
+            <input type="number" class="form-control" id="pedidosDiasLimpieza" name="pedidosDiasLimpieza" 
+                   value="{{ config.pedidos_dias_limpieza }}" min="1" max="365">
+            <div class="form-text">Pedidos entregados más antiguos serán eliminados</div>
+          </div>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>Información:</strong> La limpieza automática se ejecuta una vez al día y también elimina notificaciones antiguas (7 días) y movimientos de inventario (6 meses).
+        </div>
+        
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+          <button type="button" class="btn btn-warning" onclick="ejecutarLimpiezaManual()">
+            <i class="fas fa-broom me-2"></i>Ejecutar limpieza ahora
+          </button>
+          <a href="{{ url_for('migrar_base_datos') }}" class="btn btn-info" onclick="return confirm('¿Ejecutar migración de base de datos?')">
+            <i class="fas fa-database me-2"></i>Migrar Base de Datos
+          </a>
+        </div>
       </form>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function ejecutarLimpiezaManual() {
+    if (confirm('¿Estás seguro de que quieres ejecutar la limpieza manual ahora? Esto eliminará datos antiguos según la configuración actual.')) {
+        // Crear formulario temporal para enviar POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("limpiar_datos_manual") }}';
+        
+        // Agregar token CSRF
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Enviar formulario
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

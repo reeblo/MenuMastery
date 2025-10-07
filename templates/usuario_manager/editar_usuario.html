@@ -1,0 +1,119 @@
+{% extends "usuario_manager/base.html" %}
+
+{% block title %}Editar Usuario{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-user-edit me-2"></i>Editar Usuario
+                </h1>
+                <a href="{{ url_for('gestion_usuarios') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Información del Usuario</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre" class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" 
+                                       value="{{ usuario.nombre }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ usuario.email }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="rol" class="form-label">Rol *</label>
+                                <select class="form-control" id="rol" name="rol" required onchange="toggleTipoEmpleado()">
+                                    <option value="">Seleccionar rol</option>
+                                    <option value="cliente" {% if usuario.rol == 'cliente' %}selected{% endif %}>Cliente</option>
+                                    <option value="empleado" {% if usuario.rol == 'empleado' %}selected{% endif %}>Empleado</option>
+                                    <option value="usuario_manager" {% if usuario.rol == 'usuario_manager' %}selected{% endif %}>Usuario Manager</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de Registro</label>
+                                <input type="text" class="form-control" 
+                                       value="{{ usuario.fecha_registro.strftime('%d/%m/%Y %H:%M') }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row" id="tipoEmpleadoRow" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo_empleado" class="form-label">Tipo de Empleado</label>
+                                <select class="form-control" id="tipo_empleado" name="tipo_empleado">
+                                    <option value="">Seleccionar tipo</option>
+                                    <option value="cocinero" {% if usuario.tipo_empleado == 'cocinero' %}selected{% endif %}>Cocinero</option>
+                                    <option value="mesero" {% if usuario.tipo_empleado == 'mesero' %}selected{% endif %}>Mesero</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Nota:</strong> Para cambiar la contraseña, el usuario debe usar la función "Cambiar contraseña" en su perfil.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Actualizar Usuario
+                                </button>
+                                <a href="{{ url_for('gestion_usuarios') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTipoEmpleado() {
+    const rol = document.getElementById('rol').value;
+    const tipoEmpleadoRow = document.getElementById('tipoEmpleadoRow');
+    const tipoEmpleado = document.getElementById('tipo_empleado');
+    
+    if (rol === 'empleado') {
+        tipoEmpleadoRow.style.display = 'block';
+        tipoEmpleado.required = true;
+    } else {
+        tipoEmpleadoRow.style.display = 'none';
+        tipoEmpleado.required = false;
+        if (rol !== 'empleado') {
+            tipoEmpleado.value = '';
+        }
+    }
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    toggleTipoEmpleado();
+});
+</script>
+{% endblock %}

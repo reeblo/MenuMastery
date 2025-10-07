@@ -50,11 +50,6 @@
                     </a>
                 </li>
 
-                <li class="{% if request.endpoint == 'gestion_usuarios' %}active{% endif %}">
-                    <a href="{{ url_for('gestion_usuarios') }}">
-                        <i class="fas fa-users-cog me-2"></i>Gestión de Usuarios
-                    </a>
-                </li>
 
                 <li class="{% if request.endpoint == 'reportes' %}active{% endif %}">
                     <a href="{{ url_for('reportes') }}">
@@ -198,10 +193,10 @@
                                         </a>
                                     </div>
                                     <div class="col-md-6">
-                                        <a href="{{ url_for('gestion_usuarios') }}" class="btn quick-action w-100 text-start p-3">
-                                            <i class="fas fa-user-plus fa-2x mb-2"></i>
-                                            <h6>Gestionar Usuarios</h6>
-                                            <small>Administrar usuarios del sistema</small>
+                                        <a href="{{ url_for('configuracion_sistema') }}" class="btn quick-action w-100 text-start p-3">
+                                            <i class="fas fa-cog fa-2x mb-2"></i>
+                                            <h6>Configuración</h6>
+                                            <small>Configurar sistema y preferencias</small>
                                         </a>
                                     </div>
                                 </div>
@@ -258,6 +253,46 @@
                                             <p class="mb-0 text-muted">"Ensalada César" bajo en inventario</p>
                                             <small class="text-muted">Hace 1 día</small>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gestión de Usuarios -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-users-cog me-2 text-primary"></i>Gestión de Usuarios
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Información importante:</strong> La gestión de usuarios ha sido delegada al rol de <strong>Usuario Manager</strong> 
+                                    para mejorar la seguridad y separación de responsabilidades. Como administrador, puedes acceder a todas las demás funciones del sistema.
+                                </div>
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <i class="fas fa-user-shield fa-2x text-warning mb-2"></i>
+                                        <h6>Usuario Manager</h6>
+                                        <p class="text-muted mb-0">Gestiona usuarios del sistema</p>
+                                        <small class="text-muted">usermanager@menumastery.com</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                                        <h6>Seguridad Mejorada</h6>
+                                        <p class="text-muted mb-0">Separación de responsabilidades</p>
+                                        <small class="text-muted">Solo admins pueden gestionar admins</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <i class="fas fa-cogs fa-2x text-info mb-2"></i>
+                                        <h6>Administración</h6>
+                                        <p class="text-muted mb-0">Enfocada en el negocio</p>
+                                        <small class="text-muted">Platos, inventario, reportes</small>
                                     </div>
                                 </div>
                             </div>

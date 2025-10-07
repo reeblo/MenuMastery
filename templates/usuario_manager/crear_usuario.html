@@ -1,0 +1,115 @@
+{% extends "usuario_manager/base.html" %}
+
+{% block title %}Crear Usuario{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-user-plus me-2"></i>Crear Usuario
+                </h1>
+                <a href="{{ url_for('gestion_usuarios') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Información del Usuario</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre" class="form-label">Nombre Completo *</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Contraseña *</label>
+                                <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                                <div class="form-text">Mínimo 8 caracteres</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="rol" class="form-label">Rol *</label>
+                                <select class="form-control" id="rol" name="rol" required onchange="toggleTipoEmpleado()">
+                                    <option value="">Seleccionar rol</option>
+                                    <option value="cliente">Cliente</option>
+                                    <option value="empleado">Empleado</option>
+                                    <option value="usuario_manager">Usuario Manager</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row" id="tipoEmpleadoRow" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo_empleado" class="form-label">Tipo de Empleado</label>
+                                <select class="form-control" id="tipo_empleado" name="tipo_empleado">
+                                    <option value="">Seleccionar tipo</option>
+                                    <option value="cocinero">Cocinero</option>
+                                    <option value="mesero">Mesero</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Información importante:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Los <strong>Clientes</strong> pueden hacer pedidos y reservas</li>
+                                        <li>Los <strong>Empleados</strong> necesitan un tipo específico (Cocinero o Mesero)</li>
+                                        <li>Los <strong>Usuario Managers</strong> pueden gestionar otros usuarios</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Crear Usuario
+                                </button>
+                                <a href="{{ url_for('gestion_usuarios') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTipoEmpleado() {
+    const rol = document.getElementById('rol').value;
+    const tipoEmpleadoRow = document.getElementById('tipoEmpleadoRow');
+    const tipoEmpleado = document.getElementById('tipo_empleado');
+    
+    if (rol === 'empleado') {
+        tipoEmpleadoRow.style.display = 'block';
+        tipoEmpleado.required = true;
+    } else {
+        tipoEmpleadoRow.style.display = 'none';
+        tipoEmpleado.required = false;
+        tipoEmpleado.value = '';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "usuario_manager/base.html" %}
+
+{% block title %}Gestionar Usuarios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-users me-2"></i>Gestionar Usuarios
+                </h1>
+                <a href="{{ url_for('crear_usuario') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Crear Usuario
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Lista de Usuarios</h6>
+                </div>
+                <div class="card-body">
+                    {% if usuarios %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Tipo Empleado</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios %}
+                                <tr>
+                                    <td>{{ usuario.id }}</td>
+                                    <td>{{ usuario.nombre }}</td>
+                                    <td>{{ usuario.email }}</td>
+                                    <td>
+                                        {% if usuario.rol == 'cliente' %}
+                                            <span class="badge badge-primary">Cliente</span>
+                                        {% elif usuario.rol == 'empleado' %}
+                                            <span class="badge badge-info">Empleado</span>
+                                        {% elif usuario.rol == 'usuario_manager' %}
+                                            <span class="badge badge-warning">Usuario Manager</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ usuario.rol }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.tipo_empleado %}
+                                            {% if usuario.tipo_empleado == 'cocinero' %}
+                                                <span class="badge badge-success">Cocinero</span>
+                                            {% elif usuario.tipo_empleado == 'mesero' %}
+                                                <span class="badge badge-info">Mesero</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">{{ usuario.tipo_empleado }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ usuario.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('editar_usuario', id=usuario.id) }}" 
+                                               class="btn btn-sm btn-warning" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="confirmarEliminacion({{ usuario.id }}, '{{ usuario.nombre }}')" 
+                                                    title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
+                        <h5 class="text-gray-600">No hay usuarios registrados</h5>
+                        <p class="text-muted">Comienza creando el primer usuario del sistema.</p>
+                        <a href="{{ url_for('crear_usuario') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>Crear Usuario
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar al usuario <strong id="nombreUsuario"></strong>?</p>
+                <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarEliminacion(id, nombre) {
+    document.getElementById('nombreUsuario').textContent = nombre;
+    document.getElementById('deleteForm').action = "{{ url_for('eliminar_usuario', id=0) }}".replace('0', id);
+    $('#confirmModal').modal('show');
+}
+</script>
+{% endblock %}

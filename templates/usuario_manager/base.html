@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Usuario Manager - MenuMastery{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="admin" {% if current_user.is_authenticated %}data-user-authenticated="true"{% endif %}>
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <!-- Título a la izquierda -->
+                <div>
+                    <h1 class="mb-0">Usuario Manager</h1>
+                </div>
+                
+                <!-- Usuario y botón de salir a la derecha -->
+                <div class="user-info d-flex align-items-center gap-3">
+                    <span class="text-light">
+                        <i class="fas fa-user-shield me-1"></i>{{ current_user.nombre }}
+                    </span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light">
+                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <nav class="admin-sidebar">
+            <ul>
+                <li class="{% if request.endpoint == 'usuario_manager_dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('usuario_manager_dashboard') }}">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'gestion_usuarios' %}active{% endif %}">
+                    <a href="{{ url_for('gestion_usuarios') }}">
+                        <i class="fas fa-users me-2"></i>Gestionar Usuarios
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'crear_usuario' %}active{% endif %}">
+                    <a href="{{ url_for('crear_usuario') }}">
+                        <i class="fas fa-user-plus me-2"></i>Crear Usuario
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="admin-main">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div> 
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
