@@ -21,6 +21,7 @@ from flask import jsonify
 from flask_login import logout_user
 from functools import wraps
 from decimal import Decimal, ROUND_HALF_UP
+from functools import lru_cache
 
 from wtforms import (
     StringField,
@@ -71,13 +72,13 @@ class RolUsuario(Enum):
 class Usuario(db.Model, UserMixin):
     __tablename__ = 'usuario'
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    nombre = db.Column(db.String(100), nullable=False, index=True)
+    email = db.Column(db.String(100), unique=True, nullable=False, index=True)
     password = db.Column(db.String(200), nullable=False)
-    rol = db.Column(db.String(20), default= RolUsuario.CLIENTE.value) 
-    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    rol = db.Column(db.String(20), default= RolUsuario.CLIENTE.value, index=True) 
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     foto = db.Column(db.String(200), default='default.jpeg')
-    tipo_empleado = db.Column(db.String(20))
+    tipo_empleado = db.Column(db.String(20), index=True)
 
 class RegistroForm(FlaskForm):
     nombre = StringField('Nombre completo', validators=[DataRequired()])
@@ -156,26 +157,26 @@ class PlatoForm(FlaskForm):
 
 class Plato(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
+    nombre = db.Column(db.String(100), nullable=False, index=True)
     descripcion = db.Column(db.Text)
-    precio = db.Column(db.Float, nullable=False)
+    precio = db.Column(db.Float, nullable=False, index=True)
     imagen = db.Column(db.String(255)) 
-    destacado = db.Column(db.Boolean, default=False)
-    agotado = db.Column(db.Boolean, default=False)
-    categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
+    destacado = db.Column(db.Boolean, default=False, index=True)
+    agotado = db.Column(db.Boolean, default=False, index=True)
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False, index=True)
     categoria = db.relationship('Categoria', backref='platos') 
-    stock = db.Column(db.Integer, default=0)
+    stock = db.Column(db.Integer, default=0, index=True)
     stock_minimo = db.Column(db.Integer, default=5) 
-    fecha_actualizacion = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_actualizacion = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False, index=True)
     usuario = db.relationship('Usuario', backref='pedidos')
-    mesa = db.Column(db.String(20)) 
+    mesa = db.Column(db.String(20), index=True) 
     total = db.Column(db.Float, nullable=False)
-    estado = db.Column(db.String(20), default='pendiente')
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    estado = db.Column(db.String(20), default='pendiente', index=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     items = db.relationship('PedidoItem', backref='pedido', lazy=True)
 
 class PedidoItem(db.Model):
@@ -189,19 +190,19 @@ class PedidoItem(db.Model):
 
 class Reserva(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, nullable=False)
+    fecha = db.Column(db.DateTime, nullable=False, index=True)
     personas = db.Column(db.Integer, nullable=False)
     comentarios = db.Column(db.Text)
-    estado = db.Column(db.String(20), default='pendiente')
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    mesa = db.Column(db.String(10))
+    estado = db.Column(db.String(20), default='pendiente', index=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False, index=True)
+    mesa = db.Column(db.String(10), index=True)
     usuario = db.relationship('Usuario', backref='reservas')
-    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 class CarritoItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    plato_id = db.Column(db.Integer, db.ForeignKey('plato.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False, index=True)
+    plato_id = db.Column(db.Integer, db.ForeignKey('plato.id'), nullable=False, index=True)
     cantidad = db.Column(db.Integer, default=1)
     plato = db.relationship('Plato', backref='en_carritos')
 
@@ -250,17 +251,18 @@ def make_session_permanent():
 
 @app.before_request
 def ejecutar_limpieza_automatica():
-    """Ejecuta limpieza automática una vez al día"""
+    """Ejecuta limpieza automática una vez al día - OPTIMIZADO"""
     try:
-        # Verificar si ya se ejecutó la limpieza hoy
-        ultima_limpieza = session.get('ultima_limpieza_automatica')
-        hoy = datetime.utcnow().date()
-        
-        if ultima_limpieza != str(hoy):
-            # Ejecutar limpieza automática
-            limpiar_datos_antiguos()
-            # Marcar que se ejecutó hoy
-            session['ultima_limpieza_automatica'] = str(hoy)
+        # Solo ejecutar limpieza en rutas administrativas para mejorar rendimiento
+        if request.endpoint and request.endpoint.startswith('admin_'):
+            ultima_limpieza = session.get('ultima_limpieza_automatica')
+            hoy = datetime.utcnow().date()
+            
+            if ultima_limpieza != str(hoy):
+                # Ejecutar limpieza automática solo en contexto administrativo
+                limpiar_datos_antiguos()
+                # Marcar que se ejecutó hoy
+                session['ultima_limpieza_automatica'] = str(hoy)
     except Exception:
         # Si hay error, continuar normalmente
         pass
@@ -435,11 +437,19 @@ def admin_panel():
         flash('Acceso no autorizado', 'danger')
         return redirect(url_for('inicio'))
     
-    # Estadísticas actualizadas
-    total_usuarios = Usuario.query.count()
-    pedidos_hoy = Pedido.query.filter(Pedido.fecha >= datetime.today().date()).count()
-    productos_inventario = Plato.query.count()
-    reservas_activas = Reserva.query.filter(Reserva.fecha >= datetime.now()).count()
+    # OPTIMIZACIÓN: Estadísticas con consultas más eficientes
+    hoy = datetime.today().date()
+    ahora = datetime.now()
+    
+    # Usar subconsultas para mejor rendimiento
+    total_usuarios = db.session.query(db.func.count(Usuario.id)).scalar()
+    pedidos_hoy = db.session.query(db.func.count(Pedido.id)).filter(
+        db.func.date(Pedido.fecha) == hoy
+    ).scalar()
+    productos_inventario = db.session.query(db.func.count(Plato.id)).scalar()
+    reservas_activas = db.session.query(db.func.count(Reserva.id)).filter(
+        Reserva.fecha >= ahora
+    ).scalar()
     
     return render_template('admin/base.html', 
                         total_usuarios=total_usuarios,
@@ -456,7 +466,8 @@ def agregar_plato():
         return redirect(url_for('inicio'))
     
     form = PlatoForm()
-    form.categoria_id.choices = [(c.id, c.nombre) for c in Categoria.query.order_by('nombre')]
+    # OPTIMIZACIÓN: Usar cache para categorías
+    form.categoria_id.choices = [(c.id, c.nombre) for c in get_categorias_cached()]
     
     if form.validate_on_submit():
         try:
@@ -517,7 +528,8 @@ def editar_plato(id):
     
     plato = Plato.query.get_or_404(id)
     form = PlatoForm(obj=plato)
-    form.categoria_id.choices = [(c.id, c.nombre) for c in Categoria.query.order_by('nombre')]
+    # OPTIMIZACIÓN: Usar cache para categorías
+    form.categoria_id.choices = [(c.id, c.nombre) for c in get_categorias_cached()]
     
     if form.validate_on_submit():
         try:
@@ -1090,21 +1102,39 @@ def perfil():
 @app.route('/perfil/actualizar', methods=['POST'])
 @login_required
 def actualizar_perfil():
-    current_user.nombre = request.form['nombre']
-    current_user.email = request.form['email']
-
-    foto = request.files.get('foto')
-    if foto and foto.filename != '':
-        if allowed_file(foto.filename):
-            filename = secure_filename(foto.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER_USERS'], exist_ok=True)
-            ruta = os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename)
-            foto.save(ruta)
-            current_user.foto = filename
-        else:
-            flash('Formato de imagen no permitido', 'danger')
-
     try:
+        # Validar datos básicos
+        nombre = request.form.get('nombre', '').strip()
+        email = request.form.get('email', '').strip()
+        
+        if not nombre or not email:
+            flash('Nombre y email son obligatorios', 'danger')
+            return redirect(url_for('perfil'))
+        
+        # Verificar si el email ya existe en otro usuario
+        usuario_existente = Usuario.query.filter(
+            Usuario.email == email,
+            Usuario.id != current_user.id
+        ).first()
+        
+        if usuario_existente:
+            flash('Este email ya está registrado por otro usuario', 'danger')
+            return redirect(url_for('perfil'))
+        
+        current_user.nombre = nombre
+        current_user.email = email
+
+        foto = request.files.get('foto')
+        if foto and foto.filename != '':
+            if allowed_file(foto.filename):
+                filename = secure_filename(foto.filename)
+                os.makedirs(app.config['UPLOAD_FOLDER_USERS'], exist_ok=True)
+                ruta = os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename)
+                foto.save(ruta)
+                current_user.foto = filename
+            else:
+                flash('Formato de imagen no permitido', 'danger')
+
         db.session.commit()
         flash('Perfil actualizado correctamente', 'success')
     except Exception as e:
@@ -1146,7 +1176,7 @@ def carrito():
     if request.method == 'POST':
         return procesar_pedido()
     
-    # Obtener items con las relaciones necesarias
+    # OPTIMIZACIÓN: Obtener items con una sola consulta optimizada
     items = CarritoItem.query.filter_by(usuario_id=current_user.id)\
                     .join(Plato)\
                     .options(
@@ -1155,14 +1185,19 @@ def carrito():
     
     # Crear una estructura de datos serializable
     items_data = []
+    subtotal = 0
     for item in items:
+        item_precio = float(item.plato.precio)
+        item_total = item_precio * item.cantidad
+        subtotal += item_total
+        
         item_data = {
             'id': item.id,
             'cantidad': item.cantidad,
             'plato': {
                 'id': item.plato.id,
                 'nombre': item.plato.nombre,
-                'precio': float(item.plato.precio),
+                'precio': item_precio,
                 'imagen': item.plato.imagen if item.plato.imagen else 'default-dish.jpg',
                 'categoria': {
                     'id': item.plato.categoria.id,
@@ -1173,11 +1208,10 @@ def carrito():
         items_data.append(item_data)
 
     # Calcular totales
-    subtotal = sum(item['plato']['precio'] * item['cantidad'] for item in items_data)
     envio = 2000  # Costo fijo de envío
     total = subtotal + envio
 
-    # Detectar reserva activa del usuario para auto-asignar mesa
+    # OPTIMIZACIÓN: Consulta más eficiente para reserva activa
     ahora = datetime.utcnow()
     reserva_activa = Reserva.query\
         .filter(
@@ -1189,11 +1223,22 @@ def carrito():
         .first()
     mesa_reserva_usuario = reserva_activa.mesa if reserva_activa and reserva_activa.mesa else None
 
-    # Obtener mesas disponibles (no reservadas ni ocupadas en pedidos pendientes)
+    # OPTIMIZACIÓN: Consultas más eficientes para mesas
     todas_mesas = ['1','2','3','4','5','6','7','8']
-    mesas_ocupadas = set([r.mesa for r in Reserva.query.filter(Reserva.mesa.isnot(None), Reserva.estado != 'cancelada').all()])
-    mesas_pedidos = set([p.mesa for p in Pedido.query.filter(Pedido.estado=='pendiente').all() if p.mesa])
+    
+    # Usar subconsultas más eficientes
+    mesas_ocupadas = set([r.mesa for r in Reserva.query.filter(
+        Reserva.mesa.isnot(None), 
+        Reserva.estado != 'cancelada'
+    ).with_entities(Reserva.mesa).all()])
+    
+    mesas_pedidos = set([p.mesa for p in Pedido.query.filter(
+        Pedido.estado=='pendiente',
+        Pedido.mesa.isnot(None)
+    ).with_entities(Pedido.mesa).all()])
+    
     mesas_disponibles = [m for m in todas_mesas if m not in mesas_ocupadas and m not in mesas_pedidos]
+    
     # Si el usuario tiene una mesa reservada, incluirla aunque esté ocupada, para preselección
     if mesa_reserva_usuario and mesa_reserva_usuario not in mesas_disponibles:
         mesas_disponibles = [mesa_reserva_usuario] + [m for m in mesas_disponibles if m != mesa_reserva_usuario]
@@ -1487,8 +1532,8 @@ def registro():
     if form.validate_on_submit():
         # Verificar si el email ya existe
         if Usuario.query.filter_by(email=form.email.data).first():
-            flash('Este correo ya está¡ registrado', 'danger')
-            return redirect(url_for('registro'))
+            flash('Este correo ya está registrado', 'danger')
+            return render_template('registro.html', form=form)  # Mantener datos del formulario
         
         try:
             nuevo_usuario = Usuario(
@@ -1507,6 +1552,7 @@ def registro():
         except Exception as e:
             db.session.rollback()
             flash(f'Error al registrar el usuario: {str(e)}', 'danger')
+            return render_template('registro.html', form=form)  # Mantener datos del formulario
     
     return render_template('registro.html', form=form)  # Pasa el formulario a la plantilla
 
@@ -2070,7 +2116,12 @@ def cambiar_estado_pedido(pedido_id):
 # Public routes added by fix
 @app.route('/menu', endpoint='menu')
 def menu():
-    categorias = Categoria.query.options(db.joinedload(Categoria.platos)).all()
+    # OPTIMIZACIÓN: Cargar solo platos disponibles y destacados
+    categorias = Categoria.query.options(
+        db.joinedload(Categoria.platos).joinedload(Plato.categoria)
+    ).filter(
+        Categoria.platos.any(Plato.agotado == False)
+    ).all()
     return render_template('menu.html', menu=categorias)
 
 
@@ -2102,6 +2153,7 @@ def reservas():
         except Exception:
             pass
     form.mesa.choices = [('', 'Sin preferencia')] + mesas_disponibles
+    
     if form.validate_on_submit():
         try:
             fecha_reserva = datetime.strptime(f"{form.fecha.data} {form.hora.data}", "%Y-%m-%d %H:%M")
@@ -2113,7 +2165,8 @@ def reservas():
                 ).first()
                 if reserva_existente:
                     flash(f"La mesa {form.mesa.data} ya está reservada para esa hora", 'warning')
-                    return redirect(url_for('reservas'))
+                    return render_template('reservas.html', form=form)  # Mantener datos del formulario
+            
             nueva_reserva = Reserva(
                 fecha=fecha_reserva,
                 personas=int(form.personas.data),
@@ -2129,6 +2182,8 @@ def reservas():
         except Exception as e:
             db.session.rollback()
             flash(f'Error al procesar la reserva: {str(e)}', 'danger')
+            return render_template('reservas.html', form=form)  # Mantener datos del formulario
+    
     return render_template('reservas.html', form=form)
 
 # Serve user profile images
@@ -2348,10 +2403,37 @@ def migrar_configuracion():
         except Exception as e2:
             print(f"Error al recrear tablas: {str(e2)}")
 
+def crear_indices_adicionales():
+    """Crea índices adicionales para mejorar el rendimiento"""
+    try:
+        # Índices compuestos para consultas frecuentes
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_pedido_usuario_estado ON pedido(usuario_id, estado)')
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_pedido_fecha_estado ON pedido(fecha, estado)')
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_reserva_fecha_estado ON reserva(fecha, estado)')
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_reserva_usuario_fecha ON reserva(usuario_id, fecha)')
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_plato_categoria_agotado ON plato(categoria_id, agotado)')
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_carrito_usuario_plato ON carrito_item(usuario_id, plato_id)')
+        db.engine.execute('CREATE INDEX IF NOT EXISTS idx_notificacion_tipo_visto ON notificacion(tipo_destino, visto)')
+        
+        print("Índices adicionales creados exitosamente")
+    except Exception as e:
+        print(f"Error al crear índices: {str(e)}")
+
+# Cache para consultas frecuentes
+@lru_cache(maxsize=128)
+def get_categorias_cached():
+    """Cache para categorías que no cambian frecuentemente"""
+    return Categoria.query.order_by(Categoria.nombre).all()
+
+def invalidar_cache_categorias():
+    """Invalidar cache cuando se modifiquen categorías"""
+    get_categorias_cached.cache_clear()
+
 if __name__ == '__main__':    
     with app.app_context():
         db.create_all()  
         migrar_configuracion()  # Ejecutar migración
+        crear_indices_adicionales()  # Crear índices para mejor rendimiento
         agregar_datos_iniciales()  
         crear_admin_inicial() 
     app.run(debug=True)
